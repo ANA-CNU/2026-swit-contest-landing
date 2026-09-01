@@ -1,0 +1,39 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'SW-IT Contest 2026',
+  description =
+    '충남대학교 컴퓨터인공지능학부 알고리즘 동아리 ANA가 주최하는 팀 단위 알고리즘 문제 해결 대회.',
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+// TODO: 포스터를 1200x630 으로 크롭해 public/og-image.png 로 추가한다.
+const ogImage = new URL('/og-image.png', Astro.site);
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body class="bg-paper text-ink font-sans antialiased">
+    <slot />
+  </body>
+</html>

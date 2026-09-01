@@ -1,0 +1,23 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# 전처리 결과물. scripts/build-assets.py 가 생성한다. 커밋하지 않는다.
+public/assets/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment / editor / OS
+.env
+.env.production
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

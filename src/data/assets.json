@@ -1,0 +1,344 @@
+{
+  "corn": [
+    {
+      "src": "/assets/corn/corn_1.webp",
+      "w": 422,
+      "h": 512,
+      "ratio": 0.824
+    },
+    {
+      "src": "/assets/corn/corn_2.webp",
+      "w": 423,
+      "h": 512,
+      "ratio": 0.826
+    },
+    {
+      "src": "/assets/corn/corn_3.webp",
+      "w": 431,
+      "h": 512,
+      "ratio": 0.842
+    },
+    {
+      "src": "/assets/corn/corn_4.webp",
+      "w": 432,
+      "h": 512,
+      "ratio": 0.844
+    },
+    {
+      "src": "/assets/corn/corn_5.webp",
+      "w": 221,
+      "h": 512,
+      "ratio": 0.432
+    },
+    {
+      "src": "/assets/corn/corn_6.webp",
+      "w": 421,
+      "h": 512,
+      "ratio": 0.822
+    },
+    {
+      "src": "/assets/corn/corn_7.webp",
+      "w": 512,
+      "h": 463,
+      "ratio": 1.106
+    }
+  ],
+  "figure": [
+    {
+      "src": "/assets/figure/figure_1.webp",
+      "w": 227,
+      "h": 512,
+      "ratio": 0.443
+    },
+    {
+      "src": "/assets/figure/figure_2.webp",
+      "w": 197,
+      "h": 512,
+      "ratio": 0.385
+    },
+    {
+      "src": "/assets/figure/figure_3.webp",
+      "w": 212,
+      "h": 512,
+      "ratio": 0.414
+    },
+    {
+      "src": "/assets/figure/figure_4.webp",
+      "w": 406,
+      "h": 512,
+      "ratio": 0.793
+    }
+  ],
+  "keycab": [
+    {
+      "src": "/assets/keycab/keycab_1.webp",
+      "w": 512,
+      "h": 475,
+      "ratio": 1.078
+    },
+    {
+      "src": "/assets/keycab/keycab_2.webp",
+      "w": 512,
+      "h": 475,
+      "ratio": 1.078
+    },
+    {
+      "src": "/assets/keycab/keycab_3.webp",
+      "w": 512,
+      "h": 475,
+      "ratio": 1.078
+    },
+    {
+      "src": "/assets/keycab/keycab_4.webp",
+      "w": 512,
+      "h": 473,
+      "ratio": 1.082
+    },
+    {
+      "src": "/assets/keycab/keycab_5.webp",
+      "w": 512,
+      "h": 474,
+      "ratio": 1.08
+    },
+    {
+      "src": "/assets/keycab/keycab_6.webp",
+      "w": 512,
+      "h": 474,
+      "ratio": 1.08
+    },
+    {
+      "src": "/assets/keycab/keycab_7.webp",
+      "w": 512,
+      "h": 472,
+      "ratio": 1.085
+    },
+    {
+      "src": "/assets/keycab/keycab_8.webp",
+      "w": 512,
+      "h": 472,
+      "ratio": 1.085
+    }
+  ],
+  "pixel": [
+    {
+      "src": "/assets/pixel/pixel_1.webp",
+      "w": 512,
+      "h": 367,
+      "ratio": 1.395
+    },
+    {
+      "src": "/assets/pixel/pixel_2.webp",
+      "w": 512,
+      "h": 373,
+      "ratio": 1.373
+    },
+    {
+      "src": "/assets/pixel/pixel_3.webp",
+      "w": 512,
+      "h": 370,
+      "ratio": 1.384
+    },
+    {
+      "src": "/assets/pixel/pixel_4.webp",
+      "w": 512,
+      "h": 430,
+      "ratio": 1.191
+    },
+    {
+      "src": "/assets/pixel/pixel_5.webp",
+      "w": 512,
+      "h": 371,
+      "ratio": 1.38
+    },
+    {
+      "src": "/assets/pixel/pixel_6.webp",
+      "w": 512,
+      "h": 369,
+      "ratio": 1.388
+    },
+    {
+      "src": "/assets/pixel/pixel_7.webp",
+      "w": 512,
+      "h": 371,
+      "ratio": 1.38
+    },
+    {
+      "src": "/assets/pixel/pixel_8.webp",
+      "w": 512,
+      "h": 387,
+      "ratio": 1.323
+    }
+  ],
+  "popcorn": [
+    {
+      "src": "/assets/popcorn/popcorn_1.webp",
+      "w": 495,
+      "h": 512,
+      "ratio": 0.967
+    },
+    {
+      "src": "/assets/popcorn/popcorn_2.webp",
+      "w": 431,
+      "h": 512,
+      "ratio": 0.842
+    },
+    {
+      "src": "/assets/popcorn/popcorn_3.webp",
+      "w": 479,
+      "h": 512,
+      "ratio": 0.936
+    },
+    {
+      "src": "/assets/popcorn/popcorn_4.webp",
+      "w": 458,
+      "h": 512,
+      "ratio": 0.895
+    },
+    {
+      "src": "/assets/popcorn/popcorn_5.webp",
+      "w": 443,
+      "h": 512,
+      "ratio": 0.865
+    },
+    {
+      "src": "/assets/popcorn/popcorn_6.webp",
+      "w": 426,
+      "h": 512,
+      "ratio": 0.832
+    },
+    {
+      "src": "/assets/popcorn/popcorn_7.webp",
+      "w": 488,
+      "h": 512,
+      "ratio": 0.953
+    },
+    {
+      "src": "/assets/popcorn/popcorn_8.webp",
+      "w": 456,
+      "h": 512,
+      "ratio": 0.891
+    },
+    {
+      "src": "/assets/popcorn/popcorn_9.webp",
+      "w": 460,
+      "h": 512,
+      "ratio": 0.898
+    },
+    {
+      "src": "/assets/popcorn/popcorn_10.webp",
+      "w": 504,
+      "h": 512,
+      "ratio": 0.984
+    },
+    {
+      "src": "/assets/popcorn/popcorn_11.webp",
+      "w": 424,
+      "h": 494,
+      "ratio": 0.858
+    },
+    {
+      "src": "/assets/popcorn/popcorn_12.webp",
+      "w": 474,
+      "h": 471,
+      "ratio": 1.006
+    }
+  ],
+  "sparkle": [
+    {
+      "src": "/assets/sparkle/sparkle_1.webp",
+      "w": 301,
+      "h": 512,
+      "ratio": 0.588
+    },
+    {
+      "src": "/assets/sparkle/sparkle_2.webp",
+      "w": 343,
+      "h": 512,
+      "ratio": 0.67
+    },
+    {
+      "src": "/assets/sparkle/sparkle_3.webp",
+      "w": 302,
+      "h": 512,
+      "ratio": 0.59
+    },
+    {
+      "src": "/assets/sparkle/sparkle_4.webp",
+      "w": 303,
+      "h": 512,
+      "ratio": 0.592
+    },
+    {
+      "src": "/assets/sparkle/sparkle_5.webp",
+      "w": 406,
+      "h": 512,
+      "ratio": 0.793
+    },
+    {
+      "src": "/assets/sparkle/sparkle_6.webp",
+      "w": 414,
+      "h": 512,
+      "ratio": 0.809
+    },
+    {
+      "src": "/assets/sparkle/sparkle_7.webp",
+      "w": 415,
+      "h": 512,
+      "ratio": 0.811
+    },
+    {
+      "src": "/assets/sparkle/sparkle_8.webp",
+      "w": 408,
+      "h": 512,
+      "ratio": 0.797
+    },
+    {
+      "src": "/assets/sparkle/sparkle_9.webp",
+      "w": 344,
+      "h": 507,
+      "ratio": 0.679
+    },
+    {
+      "src": "/assets/sparkle/sparkle_10.webp",
+      "w": 392,
+      "h": 501,
+      "ratio": 0.782
+    },
+    {
+      "src": "/assets/sparkle/sparkle_11.webp",
+      "w": 343,
+      "h": 506,
+      "ratio": 0.678
+    },
+    {
+      "src": "/assets/sparkle/sparkle_12.webp",
+      "w": 389,
+      "h": 504,
+      "ratio": 0.772
+    },
+    {
+      "src": "/assets/sparkle/sparkle_13.webp",
+      "w": 376,
+      "h": 512,
+      "ratio": 0.734
+    },
+    {
+      "src": "/assets/sparkle/sparkle_14.webp",
+      "w": 396,
+      "h": 512,
+      "ratio": 0.773
+    },
+    {
+      "src": "/assets/sparkle/sparkle_15.webp",
+      "w": 384,
+      "h": 512,
+      "ratio": 0.75
+    },
+    {
+      "src": "/assets/sparkle/sparkle_16.webp",
+      "w": 377,
+      "h": 512,
+      "ratio": 0.736
+    }
+  ]
+}

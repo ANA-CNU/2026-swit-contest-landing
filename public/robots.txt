@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://2026-swit-contest.anacnu.kr/sitemap-index.xml
