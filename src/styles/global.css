@@ -7,6 +7,13 @@
 /* 디자인 토큰은 tailwind.config.mjs 에서 관리한다. */
 @config '../../tailwind.config.mjs';
 
+:root {
+  /* sticky 섹션 네비게이션 높이.
+     SectionNav.astro 의 높이와 각 섹션의 scroll-margin-top 이 이 값을 공유한다.
+     앵커로 이동했을 때 제목이 네비게이션 뒤로 숨지 않게 하는 기준이다. */
+  --nav-h: 3.5rem;
+}
+
 /* 배경은 흰색이다. 다크 테마를 만들지 않는다. */
 html {
   background-color: theme(colors.paper);

@@ -1,0 +1,480 @@
+---
+/**
+ * 대회 정보 섹션. 세로로 스크롤하며 읽는 구성이다.
+ *
+ * 섹션마다 구조가 다르다 — 전부 같은 라운드 카드로 만들지 않는다.
+ *   일정   시각 / 내용 두 열. 순서가 있는 유일한 콘텐츠라 번호를 붙인다
+ *   장소   짧으므로 카드 없이 한 줄
+ *   대상   세 항목 나열
+ *   규칙   허용과 금지를 나눠 배치하고 금지를 두드러지게 한다
+ *   상금   금액 내림차순이 크기로 드러나는 표. 대상만 gold
+ *
+ * 배경은 전부 흰색이다. 섹션마다 배경색을 바꾸지 않는다.
+ * 섹션 진입 애니메이션은 없다 — 히어로의 분사가 페이지의 유일한 모션이다.
+ */
+import {
+  CONTEST_DATE,
+  ELIGIBILITY,
+  PRIZES,
+  PRIZE_NOTE,
+  RULES,
+  SCHEDULE,
+  SECTION_ICON,
+  VENUE,
+} from '../data/contest';
+---
+
+<div class="info">
+  {/* ── 1. 대회 일정 ───────────────────────────────── */}
+  <section id="schedule" class="section">
+    <h2 class="heading">
+      <img class="heading__icon" src={SECTION_ICON.schedule} alt="" aria-hidden="true" />
+      대회 일정
+    </h2>
+    <p class="section__lead">{CONTEST_DATE}</p>
+
+    <ol class="timeline">
+      {
+        SCHEDULE.map((item, i) => (
+          <li class="timeline__row">
+            <span class="timeline__num" aria-hidden="true">{i + 1}</span>
+            <span class="timeline__time">{item.time}</span>
+            <span class="timeline__title">{item.title}</span>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  {/* ── 2. 대회 장소 — 카드 없이 한 줄 ──────────────── */}
+  <section id="venue" class="section">
+    <h2 class="heading">
+      <img class="heading__icon" src={SECTION_ICON.venue} alt="" aria-hidden="true" />
+      대회 장소
+    </h2>
+    <p class="venue">{VENUE}</p>
+  </section>
+
+  {/* ── 3. 참가 대상 ───────────────────────────────── */}
+  <section id="eligibility" class="section">
+    <h2 class="heading">
+      <img class="heading__icon" src={SECTION_ICON.eligibility} alt="" aria-hidden="true" />
+      참가 대상
+    </h2>
+    <ul class="targets">
+      {ELIGIBILITY.map((item) => <li class="targets__item">{item}</li>)}
+    </ul>
+  </section>
+
+  {/* ── 4. 대회 규칙 — 허용 / 금지 구분 ─────────────── */}
+  <section id="rules" class="section">
+    <h2 class="heading">
+      <img class="heading__icon" src={SECTION_ICON.rules} alt="" aria-hidden="true" />
+      대회 규칙
+    </h2>
+
+    <ul class="rules">
+      {RULES.allowed.map((item) => <li class="rules__item">{item}</li>)}
+    </ul>
+
+    <p class="ban">
+      <span class="ban__label">금지</span>
+      <span class="ban__text">{RULES.forbidden[0]}</span>
+    </p>
+  </section>
+
+  {/* ── 5. 대회 상금 ───────────────────────────────── */}
+  <section id="prizes" class="section">
+    <h2 class="heading">
+      <img class="heading__icon" src={SECTION_ICON.prizes} alt="" aria-hidden="true" />
+      대회 상금
+    </h2>
+
+    <table class="prizes">
+      <caption class="sr-only">등급별 상금과 수상 팀 수</caption>
+      <tbody>
+        {
+          PRIZES.map((p) => (
+            <tr class:list={['prizes__row', p.top && 'prizes__row--top']}>
+              <th scope="row" class="prizes__grade">{p.grade}</th>
+              <td class="prizes__amount">{p.amount}</td>
+              <td class="prizes__teams">{p.teams}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+
+    <p class="prizes__note">{PRIZE_NOTE}</p>
+  </section>
+
+  {/* ── 6. 참가 신청 ───────────────────────────────── */}
+  <section id="apply" class="section section--apply">
+    <h2 class="heading heading--plain">참가 신청</h2>
+    {/* TODO: 참가 신청 구글폼 주소가 확정되면 href 를 교체한다. */}
+    <a class="apply-cta" href="#">구글폼으로 신청하기</a>
+  </section>
+</div>
+
+<style>
+  @reference '../styles/global.css';
+
+  .info {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .section {
+    /* 앵커 이동 시 제목이 sticky 네비게이션 뒤로 숨지 않게 한다. */
+    scroll-margin-top: calc(var(--nav-h) + 1.25rem);
+    padding: clamp(2.5rem, 6vh, 4.5rem) 0;
+    border-bottom: 1px solid color-mix(in srgb, theme(colors.ink) 8%, transparent);
+  }
+
+  .section:last-child {
+    border-bottom: 0;
+  }
+
+  .heading {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin: 0;
+    font-size: clamp(1.25rem, 3.2vw, 1.625rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .heading__icon {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    flex: none;
+  }
+
+  .heading--plain {
+    justify-content: center;
+  }
+
+  .section__lead {
+    margin: 0.75rem 0 0;
+    color: theme(colors.orange);
+    font-size: 1rem;
+    font-weight: 600;
+    /* 날짜의 숫자 폭을 고르게 한다. 모노스페이스를 쓰지 않는다. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 일정: 시각이 축으로 드러나는 두 열 ─────────────── */
+  .timeline {
+    margin: 1.0rem 0 0;
+    padding: 0;
+    list-style: none;
+
+    /* 배지 지름 = 세 요소의 첫 줄 높이. 이 한 값으로 정렬을 맞춘다. */
+    --row-line: 1.5rem;
+    /* 시각 열 고정 폭. 네 행의 내용 시작점이 폰트 렌더링과 무관하게 일치한다. */
+    --time-col: 8.5rem;
+    --row-gap: 0.75rem;
+  }
+
+  /*
+   * 배지 / 시각 / 내용 세 요소를 같은 기준으로 정렬한다.
+   *
+   * 세 요소의 첫 줄 높이를 모두 --row-line 으로 통일하고 align-items: flex-start
+   * 로 위를 맞춘다. 그러면 배지 원의 중심이 첫 줄 상자의 중심과 정확히 겹치고,
+   * 시각과 내용의 첫 줄 baseline 도 같은 줄에 놓인다.
+   *
+   * align-items: baseline 은 쓰지 않는다. 배지는 안쪽 숫자를 place-items 로
+   * 중앙 정렬하므로 baseline 을 가진 자식이 없어, 브라우저가 테두리 상자에서
+   * baseline 을 합성한다(원의 아래 끝이 기준선이 된다). 그 결과가 폰트·엔진에
+   * 따라 달라져 이전에 원이 텍스트보다 아래로 내려가 있었다.
+   */
+  .timeline__row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--row-gap);
+    padding: 0.875rem 0;
+    border-top: 1px solid color-mix(in srgb, theme(colors.ink) 8%, transparent);
+  }
+
+  .timeline__row:first-child {
+    border-top: 0;
+  }
+
+  .timeline__num {
+    flex: none;
+    /* 고정 크기 원. 안의 숫자는 line-height 가 아니라 place-items 로 중앙에 온다. */
+    display: grid;
+    place-items: center;
+    width: var(--row-line);
+    height: var(--row-line);
+    line-height: 1;
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, theme(colors.orange) 12%, transparent);
+    color: theme(colors.orange);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .timeline__time {
+    flex: none;
+    width: var(--time-col);
+    /* 첫 줄 높이를 배지 지름과 같게 맞춘다. */
+    line-height: var(--row-line);
+    color: theme(colors.orange);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .timeline__title {
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: var(--row-line);
+    font-size: 1rem;
+    font-weight: 500;
+    word-break: keep-all;
+  }
+
+  /* ── 장소: 카드 없이 한 줄 ──────────────────────────── */
+  .venue {
+    margin: 1rem 0 0;
+    font-size: clamp(1rem, 2.4vw, 1.125rem);
+    font-weight: 500;
+    word-break: keep-all;
+  }
+
+  /* ── 참가 대상: 세 항목 나열 ────────────────────────── */
+  .targets {
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.625rem;
+  }
+
+  .targets__item {
+    position: relative;
+    padding-left: 1rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    word-break: keep-all;
+  }
+
+  /* 이모지를 쓰지 않는다. 목록 표식은 CSS 도형이다. */
+  .targets__item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 9999px;
+    background-color: theme(colors.orange);
+  }
+
+  /* ── 규칙: 허용과 금지를 시각적으로 구분 ─────────────── */
+  .rules {
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.625rem;
+  }
+
+  .rules__item {
+    position: relative;
+    padding-left: 1.375rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    word-break: keep-all;
+  }
+
+  /* 허용 항목은 가벼운 체크 표식(도형)으로 둔다. */
+  .rules__item::before {
+    content: '';
+    position: absolute;
+    left: 0.1rem;
+    top: 0.48em;
+    width: 0.5rem;
+    height: 0.28rem;
+    border-left: 2px solid theme(colors.orange);
+    border-bottom: 2px solid theme(colors.orange);
+    transform: rotate(-45deg);
+  }
+
+  /* 금지 항목은 테두리와 라벨로 눈에 띄게 한다. */
+  .ban {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin: 1.5rem 0 0;
+    padding: 1rem 1.125rem;
+    border: 2px solid theme(colors.orange);
+    border-radius: 0.625rem;
+    background-color: color-mix(in srgb, theme(colors.orange) 6%, transparent);
+  }
+
+  .ban__label {
+    flex: none;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    background-color: theme(colors.orange);
+    color: theme(colors.paper);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .ban__text {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.55;
+    word-break: keep-all;
+  }
+
+  /* ── 상금: 금액 순서가 크기로 드러나는 표 ────────────── */
+  .prizes {
+    width: 100%;
+    margin: 1.5rem 0 0;
+    border-collapse: collapse;
+  }
+
+  .prizes__row {
+    border-top: 1px solid color-mix(in srgb, theme(colors.ink) 8%, transparent);
+  }
+
+  .prizes__row:first-child {
+    border-top: 0;
+  }
+
+  .prizes__grade,
+  .prizes__amount,
+  .prizes__teams {
+    padding: 0.75rem 0;
+    text-align: left;
+  }
+
+  .prizes__grade {
+    width: 5rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  /* 금액은 열을 맞춘다. 등급이 내려갈수록 글자도 작아져 순서가 크기로 읽힌다. */
+  .prizes__amount {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    font-weight: 700;
+    font-size: 1.125rem;
+    white-space: nowrap;
+  }
+
+  .prizes__teams {
+    width: 4rem;
+    padding-left: 1.25rem;
+    color: color-mix(in srgb, theme(colors.ink) 60%, transparent);
+    font-size: 0.9375rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .prizes__row:nth-child(2) .prizes__amount {
+    font-size: 1.0625rem;
+  }
+  .prizes__row:nth-child(3) .prizes__amount {
+    font-size: 1rem;
+  }
+  .prizes__row:nth-child(4) .prizes__amount {
+    font-size: 0.9375rem;
+  }
+
+  /* 최상위 강조는 gold. 대상 한 줄에만 준다. */
+  .prizes__row--top .prizes__grade,
+  .prizes__row--top .prizes__amount {
+    color: theme(colors.gold);
+  }
+
+  .prizes__row--top .prizes__amount {
+    font-size: 1.375rem;
+  }
+
+  .prizes__note {
+    margin: 1.25rem 0 0;
+    color: color-mix(in srgb, theme(colors.ink) 70%, transparent);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    word-break: keep-all;
+  }
+
+  /* ── 참가 신청 ─────────────────────────────────────── */
+  .section--apply {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .apply-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0 2.5rem;
+    border-radius: 9999px;
+    background-color: theme(colors.orange);
+    color: theme(colors.paper);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 150ms ease;
+  }
+
+  .apply-cta:hover,
+  .apply-cta:focus-visible {
+    background-color: theme(colors.orange-title);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 640px) {
+    /* 좁은 화면에서는 두 열이 다 들어가지 않는다.
+       배지 + 시각을 첫 줄, 내용을 다음 줄에 두고 내용을 시각과 같은 x 에 맞춘다. */
+    .timeline__row {
+      flex-wrap: wrap;
+      gap: 0.25rem var(--row-gap);
+    }
+
+    .timeline__time {
+      width: calc(100% - var(--row-line) - var(--row-gap));
+    }
+
+    .timeline__title {
+      flex-basis: 100%;
+      padding-left: calc(var(--row-line) + var(--row-gap));
+    }
+
+    .prizes__grade {
+      width: 4rem;
+      font-size: 0.9375rem;
+    }
+
+    .prizes__teams {
+      width: 3.25rem;
+      padding-left: 0.75rem;
+      font-size: 0.875rem;
+    }
+  }
+</style>
