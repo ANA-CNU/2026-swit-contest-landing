@@ -1,0 +1,167 @@
+---
+/**
+ * 섹션 sticky 네비게이션.
+ *
+ * 히어로 바로 아래에 붙어 스크롤 내내 상단에 고정된다.
+ * 현재 섹션 버튼이 활성 상태가 되며, 그 판정에만 JS(IntersectionObserver)를 쓴다.
+ * 섹션 진입 애니메이션은 없다 — 히어로의 분사가 페이지의 유일한 모션이다.
+ *
+ * 앵커 이동 시 제목이 sticky 뒤로 숨지 않도록 각 섹션에 scroll-margin-top 을 준다.
+ * 그 값은 global.css 의 --nav-h 를 쓴다(여기 높이와 반드시 같아야 한다).
+ */
+import { SECTIONS } from '../data/contest';
+---
+
+<nav class="nav" aria-label="대회 정보 섹션">
+  <ul class="nav__list">
+    {
+      SECTIONS.map((s) => (
+        <li>
+          <a class="pill" href={`#${s.id}`} data-nav-link={s.id}>
+            {s.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<style>
+  @reference '../styles/global.css';
+
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: theme(colors.paper);
+    /* 배경색을 섹션마다 바꾸지 않는다. 스크롤 시 아래 내용과 겹쳐 읽히지 않도록
+       경계선 하나만 둔다. */
+    border-bottom: 1px solid color-mix(in srgb, theme(colors.ink) 10%, transparent);
+  }
+
+  .nav__list {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+    height: var(--nav-h);
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    list-style: none;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    height: 2.25rem;
+    padding: 0 1rem;
+    border: 1px solid color-mix(in srgb, theme(colors.ink) 14%, transparent);
+    border-radius: 9999px;
+    color: theme(colors.ink);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
+  }
+
+  .pill:hover,
+  .pill:focus-visible {
+    border-color: theme(colors.orange);
+    color: theme(colors.orange);
+  }
+
+  /* 현재 섹션 */
+  .pill[aria-current='true'] {
+    background-color: theme(colors.orange);
+    border-color: theme(colors.orange);
+    color: theme(colors.paper);
+    font-weight: 700;
+  }
+
+  /* 640px 이하 — 가로 스크롤 가능한 알약 줄 */
+  @media (max-width: 640px) {
+    .nav__list {
+      justify-content: flex-start;
+      overflow-x: auto;
+      /* 스크롤 끝에서 알약이 화면 가장자리에 붙지 않게 한다. */
+      scroll-padding-inline: 1rem;
+      padding: 0 1rem;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .nav__list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pill {
+      font-size: 0.8125rem;
+      padding: 0 0.875rem;
+    }
+  }
+</style>
+
+<script>
+  // 스크롤 위치 표시 전용. 이 밖의 JS 는 넣지 않는다.
+  const links = new Map<string, HTMLAnchorElement>();
+  for (const el of document.querySelectorAll<HTMLAnchorElement>('[data-nav-link]')) {
+    links.set(el.dataset.navLink!, el);
+  }
+  const sections = [...links.keys()]
+    .map((id) => document.getElementById(id))
+    .filter((el): el is HTMLElement => el !== null);
+
+  if (sections.length > 0) {
+    const nav = document.querySelector('.nav');
+    const navH = Math.round(nav?.getBoundingClientRect().height ?? 0);
+    const intersecting = new Set<string>();
+
+    const paint = () => {
+      // 지금 "읽고 있는" 섹션 = 상단(네비게이션 아래)을 이미 지난 것들 중 마지막.
+      // 교차 비율로 고르면 두 섹션이 다 보일 때 동률이 되어 아래쪽이 뽑힌다.
+      let best: string | null = null;
+      for (const section of sections) {
+        // 기준선은 앵커가 착지하는 위치, 즉 그 섹션의 scroll-margin-top 이다.
+        // navH 만 쓰면 앵커로 이동했을 때 한 칸 앞 섹션이 활성으로 남는다.
+        const line = parseFloat(getComputedStyle(section).scrollMarginTop) || navH;
+        if (section.getBoundingClientRect().top <= line + 4) best = section.id;
+      }
+      // 마지막 섹션은 문서 끝이라 착지선까지 올라오지 못한다.
+      // 최하단에 닿았으면 마지막 섹션을 현재로 본다.
+      const bottomed =
+        window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4;
+      if (bottomed) best = sections[sections.length - 1].id;
+
+      // 아직 첫 섹션 위(히어로)라면 화면에 걸친 첫 섹션을 쓴다.
+      if (best === null) {
+        best = sections.find((s) => intersecting.has(s.id))?.id ?? null;
+      }
+      for (const [id, link] of links) {
+        if (best === id) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) intersecting.add(entry.target.id);
+          else intersecting.delete(entry.target.id);
+        }
+        paint();
+      },
+      {
+        // sticky 높이만큼 위를 잘라내 화면에 실제로 보이는 영역으로 판정한다.
+        // rootMargin 은 calc() 나 CSS 변수를 받지 않으므로 실제 높이를 재서 쓴다.
+        rootMargin: `-${navH}px 0px 0px 0px`,
+        threshold: [0, 0.15, 0.3, 0.5, 0.75, 1],
+      },
+    );
+    for (const section of sections) observer.observe(section);
+  }
+</script>
