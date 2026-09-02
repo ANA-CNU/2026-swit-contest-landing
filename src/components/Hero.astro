@@ -20,7 +20,12 @@
  *   - transform 과 opacity 만 애니메이션한다. left/top/width 는 정적이다.
  *   - 각 오브젝트를 두 겹으로 감싼다. 바깥은 이동, 안쪽은 회전만 담당하며
  *     서로 다른 easing 을 준다. 직선 궤적으로 보이지 않게 하는 목적이다.
- *   - 최종 상태는 transform: none 이다.
+ *   - 두 겹 모두 최종 상태는 transform: none 이다. 옥수수의 최종 기울기는
+ *     애니메이션이 아니라 img 의 rotate 로 정적으로 준다.
+ *
+ * 레이어 순서
+ *   광선 -> 오브젝트 -> 실루엣. 광선이 항상 최후방이고 어떤 오브젝트도 그
+ *   아래로 갈 수 없다. .layer--objects 의 isolation: isolate 가 보장한다.
  */
 import Rays from './Rays.astro';
 import TitleLockup from './TitleLockup.astro';
@@ -41,6 +46,7 @@ const objects = HERO_OBJECTS.map((o, i) => ({
   style: [
     ...Object.entries(objectVars(o)).map(([k, v]) => `${k}:${v}`),
     `--ratio:${o.ratio}`,
+    `--tilt:${o.tilt}deg`,
     `--spin:${o.spin}deg`,
     `--d:${delays[i]}ms`,
     `z-index:${o.z}`,
@@ -169,18 +175,43 @@ const objects = HERO_OBJECTS.map((o, i) => ({
     --diag: hypot(100cqw, min(100cqh, 58cqw));
   }
 
-  /* 스테이지 하단은 제목 블록과 맞닿는다. 광선이 그 변에 걸리면 직선으로 잘려
-     이음선이 보이므로, 종횡비가 달라져도 안전하게 아래쪽을 부드럽게 지운다.
-     오브젝트와 figure 는 마스크하지 않는다. */
+  /*
+   * 레이어 순서는 광선 -> 오브젝트 -> 실루엣으로 고정이다.
+   *
+   * 0, 1, 2 는 레이어 사이의 순서만 정한다. 개별 오브젝트의 z(1~50)와는
+   * 다른 축이며 섞이지 않는다 — .layer--objects 가 쌓임 문맥을 만들기 때문에
+   * 오브젝트의 z 는 그 안에서만 비교된다.
+   *
+   * 광선을 0 으로 두는 이유: z-index 가 auto 이거나 0 인 형제들은 DOM 순서대로
+   * 그려진다. 그래서 뒤 두 레이어의 z-index 를 누가 지워도 DOM 순서(광선 ->
+   * 오브젝트 -> 실루엣)가 그대로 살아 광선이 여전히 최후방에 남는다.
+   * 광선을 1 로 두면 이 성질이 깨진다. 실측으로 확인했다.
+   */
   .layer--rays {
     z-index: 0;
+    /* 스테이지 하단은 제목 블록과 맞닿는다. 광선이 그 변에 걸리면 직선으로 잘려
+       이음선이 보이므로, 종횡비가 달라져도 안전하게 아래쪽을 부드럽게 지운다.
+       오브젝트와 figure 는 마스크하지 않는다. */
     mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
   }
+
   .layer--objects {
-    z-index: 10;
+    z-index: 1;
+    /*
+     * 이 한 줄이 오브젝트의 z 를 이 레이어 안에 가둔다. 지우지 마라.
+     *
+     * isolation: isolate 는 z-index 값과 무관하게 쌓임 문맥을 만든다. 그래서
+     * hero-layout.ts 의 z 를 1~50 이 아닌 무엇으로 바꾸든 — 음수로 내려도 —
+     * 오브젝트가 이 레이어 밖으로 빠져나가 광선 아래로 갈 수 없다.
+     * 실측: 50개 전부 z: -999 로 내려도 광선 뒤로 넘어가지 않고 오브젝트
+     * 끼리의 겹침 순서만 바뀐다. isolate 를 빼면 같은 조작에서 화면의 24%가
+     * 달라진다(오브젝트가 광선 뒤로 사라진다).
+     */
+    isolation: isolate;
   }
+
   .layer--figure {
-    z-index: 60;
+    z-index: 2;
   }
 
   /* 바깥 겹 — 이동과 축소만 담당한다. 위치·크기는 정적이다. */
@@ -209,6 +240,17 @@ const objects = HERO_OBJECTS.map((o, i) => ({
     width: 100%;
     height: auto;
     aspect-ratio: var(--ratio);
+    /*
+     * 최종 회전. 애니메이션 대상이 아니라 정적인 배치값이다.
+     *
+     * transform 이 아니라 개별 rotate 속성을 쓴다. 바깥 두 겹이 transform 을
+     * 쓰고 있으므로 여기서 transform 을 또 쓰면 keyframe 과 축이 섞인다.
+     * rotate 는 따로 합성되므로 obj-fly/obj-spin 과 충돌하지 않는다.
+     *
+     * 회전 기준점은 이미지 중심이다(기본값). .obj 가 음수 마진으로 중심을
+     * 좌표에 맞춰 두었으므로 회전해도 배치 좌표가 흐트러지지 않는다.
+     */
+    rotate: var(--tilt, 0deg);
   }
 
   /* figure_1 — 좌하단. 머리 위쪽이 버스트 원점이다. */

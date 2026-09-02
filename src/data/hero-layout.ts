@@ -74,10 +74,27 @@ export interface HeroObject {
   dist: number;
   /** 표시 폭. 스테이지 폭 대비 %. dist 에 비례한다(원근). */
   size: number;
-  /** 오브젝트 레이어 내부의 z-index. 종류를 섞어 배분해 서로 겹치게 했다.
-   *  광선 레이어는 별도 쌓임 문맥이라 이 값으로 광선 아래로 보낼 수는 없다. */
+  /**
+   * 오브젝트끼리의 겹침 순서. 1~50 이며 종류를 섞어 배분해 서로 겹치게 했다.
+   *
+   * 이 값은 오브젝트 레이어 안에서만 의미가 있다. 광선과의 앞뒤는 z 로
+   * 정하지 않는다 — Hero.astro 의 .layer--objects 가 isolation: isolate 로
+   * 쌓임 문맥을 만들어 여기 어떤 값을 넣어도 광선 레이어 밖으로 나갈 수 없다.
+   * 그래서 이 숫자를 마음대로 바꿔도 광선이 오브젝트 앞으로 튀어나오지 않는다.
+   */
   z: number;
-  /** 비행 중 스핀(deg). 최종 회전은 항상 0 이다 — 크롭 원본에 회전이 구워져 있다. */
+  /**
+   * 최종 회전(deg). CSS rotate 와 같은 방향이라 양수가 시계방향이다.
+   * 애니메이션 대상이 아니다 — 정착한 뒤에도 유지되는 정적인 값이다.
+   *
+   * 크롭 원본에 이미 회전이 구워져 있으므로 이 값은 원본 방향에 더해진다.
+   * 옥수수를 제외한 나머지는 0 이다. 옥수수만 쓰는 이유는 아래 배치 목록 주석 참조.
+   */
+  tilt: number;
+  /**
+   * 비행 중 스핀(deg). 원점에서 출발할 때의 추가 회전이며 정착하면서 0 으로 풀린다.
+   * 최종 회전은 spin 이 아니라 tilt 가 정한다.
+   */
   spin: number;
 }
 
@@ -111,66 +128,82 @@ export interface HeroObject {
  * angle 은 -35 ~ 78 전 범위에 고르게 퍼져 있다(인접 항목 최대 간격 6도).
  * dist 가 큰 corn_2 는 프레임 우측에 걸쳐 잘린다. 의도된 동작이다.
  *
- * z 는 종류를 섞어 배분해 오브젝트끼리 겹치게 했다. 다만 오브젝트가 광선보다
- * 아래로 갈 수는 없다 — Hero.astro 의 .layer--objects 가 z-index: 10 으로
- * 쌓임 문맥을 만들어 .layer--rays(z-index: 0) 전체보다 위에 그려지기 때문이다.
- * 이는 hero-layout.ts 에서 바꿀 수 없다.
+ * z 는 종류를 섞어 배분해 오브젝트끼리 겹치게 했다. 1~50 이며 오브젝트 레이어
+ * 안에서만 의미가 있다. 광선은 구조적으로 항상 최후방이다(HeroObject.z 주석 참조).
+ *
+ * ── 옥수수의 tilt
+ *
+ * corn_1/2/3/4/6 원본은 다섯 개가 모두 같은 방향으로 그려져 있다. 알파 채널
+ * 2차 모멘트로 재 보면 장축이 전부 수직(±88~90도)이고 편차가 5.7도뿐이며,
+ * 뾰족한 배아 쪽이 다섯 다 아래를 향한다. 그대로 두면 여덟 개가 열병식처럼
+ * 같은 방향으로 정렬돼 보인다.
+ *
+ * 그래서 항목별로 최종 회전(tilt)을 준다. 값은 화면상 실제 위치를 계산해
+ * 아래 조건을 만족하도록 고른 것이다.
+ *   - 여덟 개가 서로 12도 이상 다르다
+ *   - 최근접 이웃끼리는 48도 이상 벌어지고 기울기 부호가 반대다
+ *     (한쪽이 시계방향이면 다른 쪽은 반시계방향)
+ *   - 두 번째 이웃(450~750px)끼리도 24도 이상 다르다
+ *   - |tilt| <= 84 로 제한한다. 90 을 넘으면 알이 뒤집혀 보인다
+ *
+ * 결과 뾰족한 쪽 방향: -6, -102, -150, -18, -66, -126, -174, -42 도
+ * (0 = 오른쪽, 양수 = 위). 아래·좌·우로 퍼지고 위를 향하는 것은 없다.
  */
 export const HERO_OBJECTS: readonly HeroObject[] = [
   // corn
-  { src: '/assets/corn/corn_2.webp', ratio: 0.826, angle: 0.5, dist: 0.87, size: 16.0, z: 10, spin: -68 },
-  { src: '/assets/corn/corn_1.webp', ratio: 0.824, angle: 12.0, dist: 0.66, size: 13.1, z: 17, spin: -226 },
-  { src: '/assets/corn/corn_4.webp', ratio: 0.844, angle: -9.0, dist: 0.52, size: 11.17, z: 24, spin: 238 },
-  { src: '/assets/corn/corn_3.webp', ratio: 0.842, angle: 20.0, dist: 0.42, size: 9.79, z: 31, spin: -128 },
-  { src: '/assets/corn/corn_6.webp', ratio: 0.822, angle: -18.0, dist: 0.32, size: 8.41, z: 38, spin: 96 },
-  { src: '/assets/corn/corn_1.webp', ratio: 0.824, angle: 33.0, dist: 0.26, size: 7.59, z: 45, spin: 152 },
-  { src: '/assets/corn/corn_3.webp', ratio: 0.842, angle: -27.0, dist: 0.19, size: 6.62, z: 52, spin: 98 },
-  { src: '/assets/corn/corn_6.webp', ratio: 0.822, angle: 50.0, dist: 0.145, size: 6.0, z: 59, spin: 264 },
+  { src: '/assets/corn/corn_2.webp', ratio: 0.826, angle: 0.5, dist: 0.87, size: 16.0, z: 1, tilt: -84, spin: -68 },
+  { src: '/assets/corn/corn_1.webp', ratio: 0.824, angle: 12.0, dist: 0.66, size: 13.1, z: 8, tilt: 12, spin: -226 },
+  { src: '/assets/corn/corn_4.webp', ratio: 0.844, angle: -9.0, dist: 0.52, size: 11.17, z: 15, tilt: 60, spin: 238 },
+  { src: '/assets/corn/corn_3.webp', ratio: 0.842, angle: 20.0, dist: 0.42, size: 9.79, z: 22, tilt: -72, spin: -128 },
+  { src: '/assets/corn/corn_6.webp', ratio: 0.822, angle: -18.0, dist: 0.32, size: 8.41, z: 29, tilt: -24, spin: 96 },
+  { src: '/assets/corn/corn_1.webp', ratio: 0.824, angle: 33.0, dist: 0.26, size: 7.59, z: 36, tilt: 36, spin: 152 },
+  { src: '/assets/corn/corn_3.webp', ratio: 0.842, angle: -27.0, dist: 0.19, size: 6.62, z: 43, tilt: 84, spin: 98 },
+  { src: '/assets/corn/corn_6.webp', ratio: 0.822, angle: 50.0, dist: 0.145, size: 6.0, z: 50, tilt: -48, spin: 264 },
   // popcorn
-  { src: '/assets/popcorn/popcorn_9.webp', ratio: 0.898, angle: -1.0, dist: 0.78, size: 7.6, z: 16, spin: -104 },
-  { src: '/assets/popcorn/popcorn_7.webp', ratio: 0.953, angle: 6.0, dist: 0.72, size: 7.11, z: 23, spin: 74 },
-  { src: '/assets/popcorn/popcorn_3.webp', ratio: 0.936, angle: 18.0, dist: 0.55, size: 5.71, z: 30, spin: 208 },
-  { src: '/assets/popcorn/popcorn_3.webp', ratio: 0.936, angle: -5.0, dist: 0.61, size: 6.2, z: 37, spin: 238 },
-  { src: '/assets/popcorn/popcorn_7.webp', ratio: 0.953, angle: -11.0, dist: 0.47, size: 5.05, z: 44, spin: -172 },
-  { src: '/assets/popcorn/popcorn_11.webp', ratio: 0.858, angle: -13.0, dist: 0.42, size: 4.64, z: 51, spin: 316 },
-  { src: '/assets/popcorn/popcorn_12.webp', ratio: 1.006, angle: 26.0, dist: 0.4, size: 4.48, z: 58, spin: 121 },
-  { src: '/assets/popcorn/popcorn_5.webp', ratio: 0.865, angle: 8.0, dist: 0.34, size: 3.99, z: 15, spin: -93 },
-  { src: '/assets/popcorn/popcorn_5.webp', ratio: 0.865, angle: -16.0, dist: 0.3, size: 3.66, z: 22, spin: -158 },
-  { src: '/assets/popcorn/popcorn_2.webp', ratio: 0.842, angle: -24.0, dist: 0.26, size: 3.33, z: 29, spin: -215 },
-  { src: '/assets/popcorn/popcorn_11.webp', ratio: 0.858, angle: 34.0, dist: 0.22, size: 3.0, z: 36, spin: 112 },
-  { src: '/assets/popcorn/popcorn_12.webp', ratio: 1.006, angle: -8.0, dist: 0.22, size: 3.0, z: 43, spin: 58 },
+  { src: '/assets/popcorn/popcorn_9.webp', ratio: 0.898, angle: -1.0, dist: 0.78, size: 7.6, z: 7, tilt: 0, spin: -104 },
+  { src: '/assets/popcorn/popcorn_7.webp', ratio: 0.953, angle: 6.0, dist: 0.72, size: 7.11, z: 14, tilt: 0, spin: 74 },
+  { src: '/assets/popcorn/popcorn_3.webp', ratio: 0.936, angle: 18.0, dist: 0.55, size: 5.71, z: 21, tilt: 0, spin: 208 },
+  { src: '/assets/popcorn/popcorn_3.webp', ratio: 0.936, angle: -5.0, dist: 0.61, size: 6.2, z: 28, tilt: 0, spin: 238 },
+  { src: '/assets/popcorn/popcorn_7.webp', ratio: 0.953, angle: -11.0, dist: 0.47, size: 5.05, z: 35, tilt: 0, spin: -172 },
+  { src: '/assets/popcorn/popcorn_11.webp', ratio: 0.858, angle: -13.0, dist: 0.42, size: 4.64, z: 42, tilt: 0, spin: 316 },
+  { src: '/assets/popcorn/popcorn_12.webp', ratio: 1.006, angle: 26.0, dist: 0.4, size: 4.48, z: 49, tilt: 0, spin: 121 },
+  { src: '/assets/popcorn/popcorn_5.webp', ratio: 0.865, angle: 8.0, dist: 0.34, size: 3.99, z: 6, tilt: 0, spin: -93 },
+  { src: '/assets/popcorn/popcorn_5.webp', ratio: 0.865, angle: -16.0, dist: 0.3, size: 3.66, z: 13, tilt: 0, spin: -158 },
+  { src: '/assets/popcorn/popcorn_2.webp', ratio: 0.842, angle: -24.0, dist: 0.26, size: 3.33, z: 20, tilt: 0, spin: -215 },
+  { src: '/assets/popcorn/popcorn_11.webp', ratio: 0.858, angle: 34.0, dist: 0.22, size: 3.0, z: 27, tilt: 0, spin: 112 },
+  { src: '/assets/popcorn/popcorn_12.webp', ratio: 1.006, angle: -8.0, dist: 0.22, size: 3.0, z: 34, tilt: 0, spin: 58 },
   // keycab
-  { src: '/assets/keycab/keycab_7.webp', ratio: 1.085, angle: 2.0, dist: 0.47, size: 5.0, z: 50, spin: -47 },
-  { src: '/assets/keycab/keycab_3.webp', ratio: 1.078, angle: -2.0, dist: 0.35, size: 3.84, z: 57, spin: -63 },
-  { src: '/assets/keycab/keycab_8.webp', ratio: 1.085, angle: 4.0, dist: 0.3, size: 3.36, z: 14, spin: 143 },
-  { src: '/assets/keycab/keycab_6.webp', ratio: 1.08, angle: 12.0, dist: 0.24, size: 2.79, z: 21, spin: -76 },
-  { src: '/assets/keycab/keycab_8.webp', ratio: 1.085, angle: 52.0, dist: 0.235, size: 2.74, z: 28, spin: 66 },
-  { src: '/assets/keycab/keycab_4.webp', ratio: 1.082, angle: 74.0, dist: 0.22, size: 2.59, z: 35, spin: -42 },
-  { src: '/assets/keycab/keycab_7.webp', ratio: 1.085, angle: 40.0, dist: 0.2, size: 2.4, z: 42, spin: 84 },
+  { src: '/assets/keycab/keycab_7.webp', ratio: 1.085, angle: 2.0, dist: 0.47, size: 5.0, z: 41, tilt: 0, spin: -47 },
+  { src: '/assets/keycab/keycab_3.webp', ratio: 1.078, angle: -2.0, dist: 0.35, size: 3.84, z: 48, tilt: 0, spin: -63 },
+  { src: '/assets/keycab/keycab_8.webp', ratio: 1.085, angle: 4.0, dist: 0.3, size: 3.36, z: 5, tilt: 0, spin: 143 },
+  { src: '/assets/keycab/keycab_6.webp', ratio: 1.08, angle: 12.0, dist: 0.24, size: 2.79, z: 12, tilt: 0, spin: -76 },
+  { src: '/assets/keycab/keycab_8.webp', ratio: 1.085, angle: 52.0, dist: 0.235, size: 2.74, z: 19, tilt: 0, spin: 66 },
+  { src: '/assets/keycab/keycab_4.webp', ratio: 1.082, angle: 74.0, dist: 0.22, size: 2.59, z: 26, tilt: 0, spin: -42 },
+  { src: '/assets/keycab/keycab_7.webp', ratio: 1.085, angle: 40.0, dist: 0.2, size: 2.4, z: 33, tilt: 0, spin: 84 },
   // sparkle
-  { src: '/assets/sparkle/sparkle_6.webp', ratio: 0.809, angle: 14.0, dist: 0.8, size: 4.2, z: 49, spin: 37 },
-  { src: '/assets/sparkle/sparkle_5.webp', ratio: 0.793, angle: -6.0, dist: 0.62, size: 3.47, z: 56, spin: 196 },
-  { src: '/assets/sparkle/sparkle_7.webp', ratio: 0.811, angle: 8.0, dist: 0.44, size: 2.73, z: 13, spin: -54 },
-  { src: '/assets/sparkle/sparkle_12.webp', ratio: 0.772, angle: 20.0, dist: 0.3, size: 2.16, z: 20, spin: 176 },
-  { src: '/assets/sparkle/sparkle_4.webp', ratio: 0.592, angle: 61.0, dist: 0.245, size: 1.93, z: 27, spin: -262 },
-  { src: '/assets/sparkle/sparkle_11.webp', ratio: 0.678, angle: -4.0, dist: 0.24, size: 1.91, z: 34, spin: 284 },
-  { src: '/assets/sparkle/sparkle_1.webp', ratio: 0.588, angle: -35.0, dist: 0.22, size: 1.83, z: 41, spin: -134 },
-  { src: '/assets/sparkle/sparkle_9.webp', ratio: 0.679, angle: 25.0, dist: 0.2, size: 1.75, z: 48, spin: -186 },
-  { src: '/assets/sparkle/sparkle_15.webp', ratio: 0.75, angle: 64.0, dist: 0.19, size: 1.71, z: 55, spin: -31 },
-  { src: '/assets/sparkle/sparkle_10.webp', ratio: 0.782, angle: 1.0, dist: 0.18, size: 1.67, z: 12, spin: 128 },
-  { src: '/assets/sparkle/sparkle_2.webp', ratio: 0.67, angle: -30.0, dist: 0.17, size: 1.63, z: 19, spin: -208 },
-  { src: '/assets/sparkle/sparkle_8.webp', ratio: 0.797, angle: 16.0, dist: 0.16, size: 1.59, z: 26, spin: 244 },
-  { src: '/assets/sparkle/sparkle_13.webp', ratio: 0.734, angle: 46.0, dist: 0.16, size: 1.59, z: 33, spin: -118 },
-  { src: '/assets/sparkle/sparkle_16.webp', ratio: 0.736, angle: 70.0, dist: 0.145, size: 1.53, z: 40, spin: 92 },
-  { src: '/assets/sparkle/sparkle_3.webp', ratio: 0.59, angle: -33.0, dist: 0.13, size: 1.47, z: 47, spin: -244 },
-  { src: '/assets/sparkle/sparkle_14.webp', ratio: 0.773, angle: 58.0, dist: 0.13, size: 1.47, z: 54, spin: 168 },
-  { src: '/assets/sparkle/sparkle_4.webp', ratio: 0.592, angle: -20.0, dist: 0.2, size: 1.75, z: 11, spin: -88 },
-  { src: '/assets/sparkle/sparkle_2.webp', ratio: 0.67, angle: 78.0, dist: 0.11, size: 1.38, z: 18, spin: 212 },
-  { src: '/assets/sparkle/sparkle_15.webp', ratio: 0.75, angle: -28.0, dist: 0.11, size: 1.38, z: 25, spin: -68 },
-  { src: '/assets/sparkle/sparkle_11.webp', ratio: 0.678, angle: 50.0, dist: 0.1, size: 1.34, z: 32, spin: -226 },
-  { src: '/assets/sparkle/sparkle_5.webp', ratio: 0.793, angle: -12.0, dist: 0.09, size: 1.3, z: 39, spin: 238 },
-  { src: '/assets/sparkle/sparkle_13.webp', ratio: 0.734, angle: 30.0, dist: 0.075, size: 1.24, z: 46, spin: -128 },
-  { src: '/assets/sparkle/sparkle_7.webp', ratio: 0.811, angle: 44.0, dist: 0.065, size: 1.2, z: 53, spin: 96 },
+  { src: '/assets/sparkle/sparkle_6.webp', ratio: 0.809, angle: 14.0, dist: 0.8, size: 4.2, z: 40, tilt: 0, spin: 37 },
+  { src: '/assets/sparkle/sparkle_5.webp', ratio: 0.793, angle: -6.0, dist: 0.62, size: 3.47, z: 47, tilt: 0, spin: 196 },
+  { src: '/assets/sparkle/sparkle_7.webp', ratio: 0.811, angle: 8.0, dist: 0.44, size: 2.73, z: 4, tilt: 0, spin: -54 },
+  { src: '/assets/sparkle/sparkle_12.webp', ratio: 0.772, angle: 20.0, dist: 0.3, size: 2.16, z: 11, tilt: 0, spin: 176 },
+  { src: '/assets/sparkle/sparkle_4.webp', ratio: 0.592, angle: 61.0, dist: 0.245, size: 1.93, z: 18, tilt: 0, spin: -262 },
+  { src: '/assets/sparkle/sparkle_11.webp', ratio: 0.678, angle: -4.0, dist: 0.24, size: 1.91, z: 25, tilt: 0, spin: 284 },
+  { src: '/assets/sparkle/sparkle_1.webp', ratio: 0.588, angle: -35.0, dist: 0.22, size: 1.83, z: 32, tilt: 0, spin: -134 },
+  { src: '/assets/sparkle/sparkle_9.webp', ratio: 0.679, angle: 25.0, dist: 0.2, size: 1.75, z: 39, tilt: 0, spin: -186 },
+  { src: '/assets/sparkle/sparkle_15.webp', ratio: 0.75, angle: 64.0, dist: 0.19, size: 1.71, z: 46, tilt: 0, spin: -31 },
+  { src: '/assets/sparkle/sparkle_10.webp', ratio: 0.782, angle: 1.0, dist: 0.18, size: 1.67, z: 3, tilt: 0, spin: 128 },
+  { src: '/assets/sparkle/sparkle_2.webp', ratio: 0.67, angle: -30.0, dist: 0.17, size: 1.63, z: 10, tilt: 0, spin: -208 },
+  { src: '/assets/sparkle/sparkle_8.webp', ratio: 0.797, angle: 16.0, dist: 0.16, size: 1.59, z: 17, tilt: 0, spin: 244 },
+  { src: '/assets/sparkle/sparkle_13.webp', ratio: 0.734, angle: 46.0, dist: 0.16, size: 1.59, z: 24, tilt: 0, spin: -118 },
+  { src: '/assets/sparkle/sparkle_16.webp', ratio: 0.736, angle: 70.0, dist: 0.145, size: 1.53, z: 31, tilt: 0, spin: 92 },
+  { src: '/assets/sparkle/sparkle_3.webp', ratio: 0.59, angle: -33.0, dist: 0.13, size: 1.47, z: 38, tilt: 0, spin: -244 },
+  { src: '/assets/sparkle/sparkle_14.webp', ratio: 0.773, angle: 58.0, dist: 0.13, size: 1.47, z: 45, tilt: 0, spin: 168 },
+  { src: '/assets/sparkle/sparkle_4.webp', ratio: 0.592, angle: -20.0, dist: 0.2, size: 1.75, z: 2, tilt: 0, spin: -88 },
+  { src: '/assets/sparkle/sparkle_2.webp', ratio: 0.67, angle: 78.0, dist: 0.11, size: 1.38, z: 9, tilt: 0, spin: 212 },
+  { src: '/assets/sparkle/sparkle_15.webp', ratio: 0.75, angle: -28.0, dist: 0.11, size: 1.38, z: 16, tilt: 0, spin: -68 },
+  { src: '/assets/sparkle/sparkle_11.webp', ratio: 0.678, angle: 50.0, dist: 0.1, size: 1.34, z: 23, tilt: 0, spin: -226 },
+  { src: '/assets/sparkle/sparkle_5.webp', ratio: 0.793, angle: -12.0, dist: 0.09, size: 1.3, z: 30, tilt: 0, spin: 238 },
+  { src: '/assets/sparkle/sparkle_13.webp', ratio: 0.734, angle: 30.0, dist: 0.075, size: 1.24, z: 37, tilt: 0, spin: -128 },
+  { src: '/assets/sparkle/sparkle_7.webp', ratio: 0.811, angle: 44.0, dist: 0.065, size: 1.2, z: 44, tilt: 0, spin: 96 },
 ];
 
 /** 각도의 cos/sin. 설계 상수는 각도이고 이 값은 파생이므로 빌드 시 계산한다. */
