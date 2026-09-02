@@ -1,0 +1,162 @@
+---
+/**
+ * 원점에서 방사되는 광선 레이어.
+ *
+ * 쐐기 15개. 각도·길이·폭·색은 전부 아래 상수 배열에 하드코딩이며 난수를 쓰지 않는다.
+ *
+ * SVG 를 쓰지 않는다. 스테이지가 고정 aspect-ratio 가 아니게 되어 뷰포트에 따라
+ * 종횡비가 바뀌는데, viewBox + preserveAspectRatio="none" 으로 늘리면 쐐기 각도가
+ * 함께 왜곡된다. CSS rotate 는 픽셀 공간에서 이뤄지므로 컨테이너 종횡비와 무관하게
+ * 각도가 정확하다. 길이·폭도 오브젝트와 같은 대각선 기준을 쓰므로 어느 화면에서나
+ * 광선과 오브젝트의 반경 축척이 일치한다.
+ *
+ * pixel_* 에셋은 쓰지 않는다. 광선만 남긴다.
+ * (scripts/build-assets.py 는 계속 pixel WebP 를 생성한다. 참조만 없앤 것이다.)
+ */
+import { ORIGIN, TIMING } from '../data/hero-layout';
+
+interface Wedge {
+  /** 원점 기준 각도(deg). 오브젝트 부채꼴(-35 ~ 78)을 덮는다. */
+  angle: number;
+  /** 길이. 스테이지 대각선 대비 비율. 1.0 을 넘으면 화면 밖까지 뻗는다. */
+  lenD: number;
+  /** 끝단 폭의 절반. 대각선 대비 비율. 원점 쪽은 한 점으로 모인다. */
+  halfD: number;
+  /** orange 원색과 orange-soft 두 톤을 섞는다. */
+  tone: 'orange' | 'soft';
+  /** 시작 지연(ms). 오브젝트보다 먼저 끝난다. */
+  delay: number;
+}
+
+/**
+ * 굵기를 세 급으로 뚜렷하게 갈랐다 — 두꺼운 4개, 중간 5개, 실선 같은 얇은 것 6개.
+ * 전부 비슷하면 그라디언트처럼 보이므로 급끼리 인접하지 않게 섞었다.
+ * 길이도 편차를 크게 뒀다. 9개는 화면 밖까지 뻗고 6개는 중간에서 끝난다.
+ */
+const WEDGES: readonly Wedge[] = [
+  { angle: -30.0, lenD: 0.204, halfD: 0.0032, tone: 'soft', delay: 0 },
+  // 이 둘은 하단(제목 블록과 맞닿는 변)으로 빠져나가면 직선 이음선이 보인다.
+  // 하단 한계(각각 0.382 / 0.535)보다 짧게 잡아 스테이지 안에서 끝나게 했다.
+  { angle: -22.0, lenD: 0.33, halfD: 0.0167, tone: 'orange', delay: 34 },
+  { angle: -15.5, lenD: 0.46, halfD: 0.0389, tone: 'orange', delay: 12 },
+  { angle: -9.0, lenD: 0.556, halfD: 0.0026, tone: 'soft', delay: 62 },
+  { angle: -2.5, lenD: 0.963, halfD: 0.0195, tone: 'soft', delay: 22 },
+  { angle: 4.0, lenD: 1.038, halfD: 0.0361, tone: 'orange', delay: 6 },
+  { angle: 11.5, lenD: 0.611, halfD: 0.0042, tone: 'orange', delay: 74 },
+  { angle: 19.0, lenD: 0.815, halfD: 0.0148, tone: 'soft', delay: 30 },
+  { angle: 27.5, lenD: 0.574, halfD: 0.0306, tone: 'soft', delay: 18 },
+  { angle: 36.0, lenD: 0.278, halfD: 0.003, tone: 'orange', delay: 84 },
+  { angle: 44.0, lenD: 0.408, halfD: 0.0185, tone: 'orange', delay: 44 },
+  { angle: 52.5, lenD: 0.352, halfD: 0.0334, tone: 'soft', delay: 26 },
+  { angle: 61.0, lenD: 0.195, halfD: 0.0022, tone: 'orange', delay: 90 },
+  { angle: 68.0, lenD: 0.306, halfD: 0.0157, tone: 'soft', delay: 52 },
+  { angle: 74.0, lenD: 0.176, halfD: 0.0037, tone: 'orange', delay: 68 },
+];
+
+const wedgeStyle = (w: Wedge) =>
+  [
+    `--lenD:${w.lenD}`,
+    `--halfD:${w.halfD}`,
+    // 화면 y 는 아래로 증가한다. 우상향이므로 부호를 뒤집는다.
+    `--rot:${(-w.angle).toFixed(2)}deg`,
+    `--d:${w.delay}ms`,
+  ].join(';');
+---
+
+{/* 광선 — transform-origin 을 원점에 두고 scaleX 로 뻗는다. 오브젝트보다 먼저다. */}
+<div class="rays">
+  {
+    WEDGES.map((w) => (
+      // 바깥 겹: 회전만. 안쪽 겹: scaleX 로 뻗기만.
+      <div class="ray" style={wedgeStyle(w)}>
+        <div
+          class:list={['ray__beam', w.tone === 'soft' ? 'ray__beam--soft' : 'ray__beam--orange']}
+          data-anim
+        />
+      </div>
+    ))
+  }
+</div>
+
+<style
+  define:vars={{
+    ox: `${ORIGIN.xPct}`,
+    oy: `${ORIGIN.yPct}`,
+    rayDur: `${TIMING.rayDur}ms`,
+  }}
+>
+  /* 컴포넌트 스코프 스타일은 별도 CSS 엔트리다. 디자인 토큰을 theme() 으로
+     쓰려면 설정을 들고 있는 global.css 를 참조로 걸어야 한다. */
+  @reference '../styles/global.css';
+
+  .rays {
+    position: absolute;
+    inset: 0;
+    /* 기준 길이 = 컨테이너 실제 대각선.
+       세로 항을 58cqw 로 제한한다. 가로로 넓은 스테이지(데스크톱: 100cqh 가
+       36~44cqw)에서는 min 이 100cqh 를 그대로 골라 아무 영향이 없고, 세로로 긴
+       스테이지(모바일 세로: 100cqh 가 140cqw)에서만 작동해 먼 오브젝트가
+       프레임 완전히 밖으로 밀려나 보이지 않게 되는 것을 막는다. */
+    --diag: hypot(100cqw, min(100cqh, 58cqw));
+  }
+
+  /* 쐐기 한 겹: 꼭짓점을 원점에 두고 +x 방향으로 놓은 뒤 회전시킨다. */
+  .ray {
+    position: absolute;
+    left: calc(var(--ox) * 1cqw);
+    top: calc(var(--oy) * 1cqh);
+    width: calc(var(--lenD) * var(--diag));
+    height: calc(2 * var(--halfD) * var(--diag));
+    margin-top: calc(-1 * var(--halfD) * var(--diag));
+    transform-origin: 0 50%;
+    rotate: var(--rot);
+  }
+
+  .ray__beam {
+    width: 100%;
+    height: 100%;
+    /* 원점 쪽이 진하고 끝단은 0.35 까지만 내려간다. 흰색으로 페이드시키지 않는다. */
+    background: linear-gradient(to right, var(--c-strong), var(--c-weak));
+    /* 원점에서 한 점으로 모이는 쐐기 */
+    clip-path: polygon(0 50%, 100% 0, 100% 100%);
+    transform-origin: 0 50%;
+    animation: ray-grow var(--rayDur) cubic-bezier(0.16, 0.84, 0.3, 1) var(--d) both;
+    will-change: transform, opacity;
+  }
+
+  .ray__beam--orange {
+    --c-strong: color-mix(in srgb, theme(colors.orange) 85%, transparent);
+    --c-weak: color-mix(in srgb, theme(colors.orange) 35%, transparent);
+  }
+
+  .ray__beam--soft {
+    --c-strong: color-mix(in srgb, theme(colors.orange-soft) 88%, transparent);
+    --c-weak: color-mix(in srgb, theme(colors.orange-soft) 38%, transparent);
+  }
+
+  @keyframes ray-grow {
+    from {
+      transform: scaleX(0);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  /* 애니메이션 없이 최종 상태를 즉시 렌더한다. */
+  @media (prefers-reduced-motion: reduce) {
+    .ray__beam {
+      animation: none;
+      will-change: auto;
+    }
+  }
+
+  /* 뷰포트 640px 이하 — 애니메이션을 생략한다. */
+  @media (max-width: 640px) {
+    .ray__beam {
+      animation: none;
+      will-change: auto;
+    }
+  }
+</style>

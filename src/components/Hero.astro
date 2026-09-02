@@ -1,0 +1,403 @@
+---
+/**
+ * 히어로. 전체가 100vh 안에 들어온다 — 분사 일러스트, 제목, 정보, CTA 가
+ * 모두 첫 화면에 보여야 한다. 스크롤을 요구하면 홍보 사이트로서 실패다.
+ *
+ * 구조
+ *   .hero          height: 100dvh, grid 2행
+ *   .stage         남은 공간 전부. container-type: size 로 cqw/cqh 의 기준이 된다
+ *   .title-block   내용 높이만큼. 제목 두 줄 + 정보 + 소개 문장 + CTA
+ *
+ * 좌표계는 고정 aspect-ratio 를 쓰지 않는다. 기준 길이(대각선)를 CSS 가
+ * hypot(100cqw, 100cqh) 로 컨테이너 실제 크기에서 구한다.
+ *
+ * 애니메이션 순서
+ *   1. 광선이 scaleX 로 뻗는다 (transform-origin 은 원점)
+ *   2. 오브젝트가 원점에서 최종 위치로 날아간다. 원점에 가까운 것부터
+ *   3. 제목 두 줄이 서로 다른 타이밍에 등장한다
+ *
+ * 구현 제약
+ *   - transform 과 opacity 만 애니메이션한다. left/top/width 는 정적이다.
+ *   - 각 오브젝트를 두 겹으로 감싼다. 바깥은 이동, 안쪽은 회전만 담당하며
+ *     서로 다른 easing 을 준다. 직선 궤적으로 보이지 않게 하는 목적이다.
+ *   - 최종 상태는 transform: none 이다.
+ */
+import Rays from './Rays.astro';
+import TitleLockup from './TitleLockup.astro';
+import {
+  FIGURE,
+  HERO_OBJECTS,
+  ORIGIN,
+  TIMING,
+  objectVars,
+  staggerDelays,
+} from '../data/hero-layout';
+import { VENUE } from '../data/contest';
+
+const delays = staggerDelays(HERO_OBJECTS);
+
+const objects = HERO_OBJECTS.map((o, i) => ({
+  ...o,
+  style: [
+    ...Object.entries(objectVars(o)).map(([k, v]) => `${k}:${v}`),
+    `--ratio:${o.ratio}`,
+    `--spin:${o.spin}deg`,
+    `--d:${delays[i]}ms`,
+    `z-index:${o.z}`,
+  ].join(';'),
+}));
+---
+
+<section class="hero">
+  {/* 스테이지 — 장식이므로 스크린리더에 노출하지 않는다. */}
+  <div class="stage" aria-hidden="true">
+    {/* 레이어 순서: 광선 -> 오브젝트 -> figure_1 */}
+    <div class="layer layer--rays">
+      <Rays />
+    </div>
+
+    <div class="layer layer--objects">
+      {
+        objects.map((o) => (
+          // 바깥 겹: 이동 + 축소. overshoot easing.
+          <div class="obj" style={o.style} data-anim>
+            {/* 안쪽 겹: 회전만. 바깥과 다른 easing 을 준다. */}
+            <div class="obj__spin" data-anim>
+              <img src={o.src} alt="" loading="eager" decoding="async" />
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="layer layer--figure">
+      <img class="figure" src={FIGURE.src} alt="" loading="eager" decoding="async" />
+    </div>
+  </div>
+
+  <div class="title-block">
+    {/* 제목 — 두 줄이 서로 다른 타이밍에 등장한다.
+        스코프 스타일은 이 컴포넌트 템플릿의 요소에만 적용되므로, 자식 컴포넌트가
+        렌더하는 <svg> 를 직접 겨냥할 수 없다. 래퍼를 여기 두고 래퍼를 움직인다. */}
+    <div class="title">
+      <div class="title__line title__line--swit text-gold">
+        <TitleLockup line="swit" />
+      </div>
+      <div class="title__line title__line--contest text-orange-title">
+        <TitleLockup line="contest" />
+      </div>
+    </div>
+
+    <dl class="facts">
+      <div class="fact">
+        <dt>일자</dt>
+        <dd>2026.10.05</dd>
+      </div>
+      <div class="fact">
+        <dt>장소</dt>
+        <dd>{VENUE}</dd>
+      </div>
+      <div class="fact">
+        <dt>접수 기간</dt>
+        <dd>09.08 ~ 09.27</dd>
+      </div>
+    </dl>
+
+    {/* 강조 구간은 <strong> 앞뒤에 공백을 두지 않는다. 개행이 공백으로 바뀌어
+        'ANA 에서' 처럼 띄어져 버린다. */}
+    <p class="intro">
+      SW-IT Contest는 충남대학교 컴퓨터인공지능학부 알고리즘 동아리 <strong
+        >ANA</strong
+      >에서 주최하는 프로그래밍 대회로, <strong>팀으로 출전</strong>하여 알고리즘 문제를
+      해결하는 대회입니다.
+    </p>
+
+    {/* TODO: 참가 신청 구글폼 주소가 확정되면 href 를 교체한다. */}
+    <a class="cta" href="#">참가 신청</a>
+  </div>
+</section>
+
+<style
+  define:vars={{
+    ox: `${ORIGIN.xPct}`,
+    oy: `${ORIGIN.yPct}`,
+    figH: `${FIGURE.heightPct}`,
+    figRatio: `${FIGURE.ratio}`,
+    objDur: `${TIMING.objDur}ms`,
+    titleDur: `${TIMING.titleDur}ms`,
+    titleSwitDelay: `${TIMING.titleSwit}ms`,
+    titleContestDelay: `${TIMING.titleContest}ms`,
+  }}
+>
+  /* 컴포넌트 스코프 스타일은 별도 CSS 엔트리다. 디자인 토큰을 theme() 으로
+     쓰려면 설정을 들고 있는 global.css 를 참조로 걸어야 한다. */
+  @reference '../styles/global.css';
+
+  /* 히어로 전체가 첫 화면에 들어온다. dvh 는 모바일 브라우저 툴바 변동을 흡수한다. */
+  .hero {
+    display: grid;
+    /* 제목 블록이 내용 높이를 먼저 확보하고 분사 영역이 남은 만큼 차지한다.
+       고정 비율(예: 65%/35%)로 두면 소개 문장이 늘어난 뷰포트에서 CTA 가 잘린다.
+       minmax(0, 1fr) 이라 분사 영역은 필요하면 0 까지 줄어들고, 로고와 CTA 는
+       어느 화면에서도 첫 화면에 남는다. */
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* 분사 영역. container-type: size 로 자손의 cqw/cqh 가 이 크기를 가리킨다.
+     고정 aspect-ratio 를 쓰지 않으므로 좌표 기준은 런타임 실제 크기다. */
+  .stage {
+    position: relative;
+    container-type: size;
+    overflow: hidden;
+  }
+
+  .layer {
+    position: absolute;
+    inset: 0;
+    /* 기준 길이 = 컨테이너 실제 대각선.
+       세로 항을 58cqw 로 제한한다. 가로로 넓은 스테이지(데스크톱: 100cqh 가
+       36~44cqw)에서는 min 이 100cqh 를 그대로 골라 아무 영향이 없고, 세로로 긴
+       스테이지(모바일 세로: 100cqh 가 140cqw)에서만 작동해 먼 오브젝트가
+       프레임 완전히 밖으로 밀려나 보이지 않게 되는 것을 막는다. */
+    --diag: hypot(100cqw, min(100cqh, 58cqw));
+  }
+
+  /* 스테이지 하단은 제목 블록과 맞닿는다. 광선이 그 변에 걸리면 직선으로 잘려
+     이음선이 보이므로, 종횡비가 달라져도 안전하게 아래쪽을 부드럽게 지운다.
+     오브젝트와 figure 는 마스크하지 않는다. */
+  .layer--rays {
+    z-index: 0;
+    mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+  }
+  .layer--objects {
+    z-index: 10;
+  }
+  .layer--figure {
+    z-index: 60;
+  }
+
+  /* 바깥 겹 — 이동과 축소만 담당한다. 위치·크기는 정적이다. */
+  .obj {
+    position: absolute;
+    left: calc(var(--ox) * 1cqw + var(--dist) * var(--diag) * var(--cos));
+    top: calc(var(--oy) * 1cqh - var(--dist) * var(--diag) * var(--sin));
+    width: calc(var(--size) * 1cqw);
+    margin-left: calc(var(--halfw) * -1cqw);
+    margin-top: calc(var(--halfh) * -1cqw);
+    /* 초기 위치는 최종 위치에서 원점까지의 벡터 = 극좌표 변위의 반대다. */
+    --bx: calc(-1 * var(--dist) * var(--diag) * var(--cos));
+    --by: calc(var(--dist) * var(--diag) * var(--sin));
+    animation: obj-fly var(--objDur) cubic-bezier(0.22, 1.35, 0.36, 1) var(--d) both;
+    will-change: transform;
+  }
+
+  /* 안쪽 겹 — 회전만 담당한다. 바깥과 다른 easing 이라 궤적이 휘어 보인다. */
+  .obj__spin {
+    animation: obj-spin var(--objDur) cubic-bezier(0.33, 0, 0.2, 1) var(--d) both;
+    will-change: transform;
+  }
+
+  .obj img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: var(--ratio);
+  }
+
+  /* figure_1 — 좌하단. 머리 위쪽이 버스트 원점이다. */
+  .figure {
+    position: absolute;
+    bottom: 0;
+    left: calc(var(--ox) * 1cqw - (var(--figH) * var(--figRatio) * 1cqh) / 2);
+    height: calc(var(--figH) * 1cqh);
+    width: auto;
+    display: block;
+  }
+
+  @keyframes obj-fly {
+    from {
+      transform: translate(var(--bx), var(--by)) scale(0.18);
+      opacity: 0;
+    }
+    22% {
+      opacity: 1;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+
+  @keyframes obj-spin {
+    from {
+      transform: rotate(var(--spin));
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  /* ── 제목 블록 ─────────────────────────────────────── */
+
+  .title-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.5rem, 1.6vh, 1.25rem);
+    padding: clamp(0.75rem, 2vh, 1.75rem) 1.5rem;
+    min-width: 0;
+  }
+
+  .title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1em;
+    /* 두 줄의 viewBox 높이가 같으므로 height 를 맞추면 글자 크기가 일치한다.
+       CONTEST 가 더 넓으므로(종횡비 8.71) 그 줄이 폭에 들어가는 높이를 상한으로 쓴다. */
+    --title-h: min(8.4vh, calc((100vw - 3rem) / 8.75), 4.6rem);
+  }
+
+  .title__line {
+    display: block;
+    height: var(--title-h);
+  }
+
+  .title__line > :global(svg) {
+    display: block;
+    height: 100%;
+    width: auto;
+  }
+
+  .title__line--swit {
+    animation: title-in var(--titleDur) cubic-bezier(0.2, 0.9, 0.3, 1) var(--titleSwitDelay) both;
+    will-change: transform, opacity;
+  }
+
+  .title__line--contest {
+    animation: title-in var(--titleDur) cubic-bezier(0.2, 0.9, 0.3, 1) var(--titleContestDelay) both;
+    will-change: transform, opacity;
+  }
+
+  @keyframes title-in {
+    from {
+      transform: translateY(16%) scale(0.94);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem 2rem;
+    margin: 0;
+    text-align: center;
+  }
+
+  .fact {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+
+  .fact dt {
+    font-size: clamp(0.6875rem, 1.5vh, 0.8125rem);
+    font-weight: 600;
+    color: theme(colors.orange);
+  }
+
+  .fact dd {
+    margin: 0;
+    font-size: clamp(0.8125rem, 1.9vh, 1rem);
+    font-weight: 500;
+  }
+
+  /* 대회 소개. 메타 줄(.fact dd, 13~16px)보다 한 단 크게 둔다.
+     위아래 간격은 .title-block 의 gap 이 균등하게 준다 — 메타 줄과 CTA 양쪽 모두. */
+  .intro {
+    max-width: 33em;
+    margin: 0;
+    color: theme(colors.ink);
+    font-size: clamp(0.875rem, 2.1vh, 1.0625rem);
+    line-height: 1.65;
+    text-align: center;
+    /* 한국어는 기본값에서 음절 단위로 끊겨 '충남대학/교' 같은 줄바꿈이 난다.
+       keep-all 로 어절 단위로만 끊는다. */
+    word-break: keep-all;
+    /* 가운데 정렬 문단의 줄 길이를 고르게 맞춘다. 미지원 브라우저는 무시한다. */
+    text-wrap: balance;
+  }
+
+  .intro strong {
+    color: theme(colors.orange);
+    font-weight: 600;
+    /* 강조 구간이 줄 사이로 쪼개지지 않게 한다. */
+    white-space: nowrap;
+  }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: clamp(2.5rem, 5.6vh, 3rem);
+    padding: 0 clamp(1.75rem, 4vw, 2.5rem);
+    border-radius: 9999px;
+    background-color: theme(colors.orange);
+    color: theme(colors.paper);
+    font-size: clamp(0.9375rem, 2vh, 1.0625rem);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 150ms ease;
+  }
+
+  .cta:hover,
+  .cta:focus-visible {
+    background-color: theme(colors.orange-title);
+  }
+
+  /* 애니메이션 없이 최종 상태를 즉시 렌더한다. */
+  @media (prefers-reduced-motion: reduce) {
+    .obj,
+    .obj__spin,
+    .title__line--swit,
+    .title__line--contest {
+      animation: none;
+      will-change: auto;
+    }
+  }
+
+  /* 뷰포트 640px 이하 — 애니메이션을 생략하고 최종 상태만 보여준다. */
+  @media (max-width: 640px) {
+    .obj,
+    .obj__spin,
+    .title__line--swit,
+    .title__line--contest {
+      animation: none;
+      will-change: auto;
+    }
+  }
+</style>
+
+<script>
+  // will-change 는 진행 중에만 걸고 animationend 에서 제거한다.
+  // CSS 규칙보다 인라인 스타일이 우선하므로 auto 로 덮어쓰면 해제된다.
+  for (const el of document.querySelectorAll<HTMLElement>('[data-anim]')) {
+    el.addEventListener(
+      'animationend',
+      () => {
+        el.style.willChange = 'auto';
+      },
+      { once: true },
+    );
+  }
+</script>
