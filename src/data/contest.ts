@@ -49,16 +49,38 @@ export const ELIGIBILITY = [
   '3인으로 팀 구성',
 ] as const;
 
+/**
+ * 본문에서 링크로 거는 외부 주소.
+ * 마크업에서는 공유 클래스 .text-link 를 붙인다 (src/styles/global.css).
+ */
+export const LINKS = {
+  ana: 'https://anacnu.kr/',
+  aoj: 'https://aoj.anacnu.kr/',
+} as const;
+
+/**
+ * 대회 규칙 한 항목.
+ * lead 가 있으면 항목 맨 앞이 링크로 시작하고, text 가 그 뒤를 잇는다.
+ */
+type RuleItem = {
+  lead?: { text: string; href: string };
+  text: string;
+};
+
 /** 대회 규칙. 허용과 금지를 나눠 담는다. */
-export const RULES = {
+export const RULES: { allowed: RuleItem[]; forbidden: string[] } = {
   allowed: [
-    'AOJ (ANA 온라인 저지 사이트) 에 접속 후 사전에 발부한 대회 전용 계정으로 참가',
-    '본인이 지참한 노트북으로 문제 풀이 진행',
-    'ICPC 평가 기준에 의거해 대회 진행',
-    '프로그래밍 언어 선택 자유, IDE 사용 가능, 사전에 작성한 팀 노트 허용',
+    {
+      // 링크 범위는 괄호를 포함한 이름 전체다.
+      lead: { text: 'AOJ (ANA 온라인 저지 사이트)', href: LINKS.aoj },
+      text: ' 에 접속 후 사전에 발부한 대회 전용 계정으로 참가',
+    },
+    { text: '본인이 지참한 노트북으로 문제 풀이 진행' },
+    { text: 'ICPC 평가 기준에 의거해 대회 진행' },
+    { text: '프로그래밍 언어 선택 자유, IDE 사용 가능, 사전에 작성한 팀 노트 허용' },
   ],
   forbidden: ['ChatGPT, Claude 등 자동으로 소스 코드를 작성해주는 서비스 사용 금지'],
-} as const;
+};
 
 /** 대회 상금. 금액 내림차순이며 대상만 최상위 강조(gold)다. */
 export const PRIZES = [
@@ -75,13 +97,16 @@ export const PRIZE_NOTE =
 export const HOST = '충남대학교 컴퓨터인공지능학부 알고리즘 동아리 ANA';
 
 /**
- * 푸터 로고 자리. CLAUDE.md 는 넷을 배치하라고 한다 —
- * ANA, 충남대학교, 소프트웨어중심대학사업단, COSS.
- * 파일이 아직 없으므로 이름만 담은 플레이스홀더로 둔다.
+ * 푸터 로고 넷 — ANA, 충남대학교, 소프트웨어중심대학사업단, COSS (CLAUDE.md "로고" 절).
+ *
+ * width 는 표시 폭(px)이다. 높이를 고정하지 않고 폭으로 맞춘 뒤 세로 중앙 정렬한다.
+ * 로고마다 종횡비가 1.79 ~ 6.86 으로 크게 달라 같은 높이를 주면 가로형 워드마크가
+ * 훨씬 커 보인다. 그래서 폭을 개별로 잡아 표시 높이가 40~50px 안에 들어오게 했다.
+ * 괄호 안이 그 폭에서 나오는 실제 표시 높이다.
  */
 export const LOGOS = [
-  'ANA',
-  '충남대학교',
-  '소프트웨어중심대학사업단',
-  'COSS',
+  { src: '/assets/logo/logo_ana.webp', name: 'ANA', width: 82, url: 'https://anacnu.kr/' }, // 높이 46px
+  { src: '/assets/logo/logo_cnu.webp', name: '충남대학교', width: 132, url: 'https://plus.cnu.ac.kr/' }, // 높이 45px
+  { src: '/assets/logo/logo_swuniv.webp', name: '소프트웨어중심대학사업단', width: 280, url: 'https://swuniv.cnu.ac.kr/' }, // 높이 41px
+  { src: '/assets/logo/logo_coss.webp', name: 'COSS', width: 104, url: 'https://www.cossnet.com/' }, // 높이 47px
 ] as const;

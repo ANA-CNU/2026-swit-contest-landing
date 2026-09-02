@@ -9,6 +9,10 @@
   4. 긴 변이 512px 을 넘으면 512px 로 축소한다. 히어로에서 그보다 크게 쓰지 않는다.
   5. src/data/assets.json 에 종류별 배열을 자연 정렬 순서로 기록한다.
 
+SOURCE_logo 만 처리 방식이 다르다 (아래 process() 참조).
+  - 알파 크롭을 하지 않는다. 로고 원본의 여백이 로고의 일부다.
+  - 긴 변이 아니라 가로 폭을 240px 로 맞춘다.
+
 asset/ 은 읽기 전용이다. 이 스크립트는 asset/ 에 절대 쓰지 않는다.
 Pillow 외의 의존성은 쓰지 않는다.
 """
@@ -31,6 +35,10 @@ SOURCE_PREFIX = "SOURCE_"
 SKIP_KINDS = {"title"}  # SVG 원본. 크롭/변환 대상이 아니다.
 MAX_EDGE = 512
 WEBP_QUALITY = 88
+
+# 로고는 오브젝트와 처리 방식이 다르다. 아래 process() 의 분기를 참조한다.
+LOGO_KIND = "logo"
+LOGO_WIDTH = 640
 
 _NUM = re.compile(r"(\d+)")
 
@@ -62,14 +70,31 @@ def alpha_of(img: Image.Image) -> Image.Image | None:
     return None
 
 
-def process(png: Path, out_path: Path, warnings: list[str]) -> tuple[int, int] | None:
-    """PNG 하나를 크롭·축소해 WebP 로 저장하고 최종 (w, h) 를 돌려준다.
+def process(png: Path, out_path: Path, kind: str, warnings: list[str]) -> tuple[int, int] | None:
+    """PNG 하나를 가공해 WebP 로 저장하고 최종 (w, h) 를 돌려준다.
 
+    오브젝트(corn/keycab/pixel/popcorn/sparkle/figure)는 알파 크롭 후 긴 변 상한을 건다.
+    로고는 그 로직을 쓰지 않는다 — 아래 로고 분기를 참조한다.
     완전히 투명한 이미지는 None 을 돌려준다 (건너뜀).
     """
     with Image.open(png) as img:
         img.load()
         alpha = alpha_of(img)
+
+        if kind == LOGO_KIND:
+            # 로고는 알파 크롭을 하지 않는다. 기관 로고의 여백은 디자인의 일부이고,
+            # 크롭해 버리면 푸터에 나란히 놓았을 때 간격이 제각각이 된다.
+            canvas = img.convert("RGBA") if alpha is not None else img.convert("RGB")
+            # 긴 변이 아니라 가로 폭을 기준으로 맞춘다. 세로형과 가로형이 섞여 있어
+            # 긴 변 기준으로 맞추면 시각적 크기가 제각각이 된다.
+            if canvas.width != LOGO_WIDTH:
+                scale = LOGO_WIDTH / canvas.width
+                canvas = canvas.resize(
+                    (LOGO_WIDTH, max(1, round(canvas.height * scale))), Image.LANCZOS
+                )
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            canvas.save(out_path, "WEBP", quality=WEBP_QUALITY, method=6)
+            return canvas.size
 
         if alpha is None:
             warnings.append(f"알파 채널 없음, 크롭 없이 변환: {png.name}")
@@ -128,7 +153,7 @@ def main() -> int:
 
         for png in pngs:
             out_path = OUT_DIR / kind / f"{png.stem}.webp"
-            size = process(png, out_path, warnings)
+            size = process(png, out_path, kind, warnings)
             if size is None:
                 skipped.append(f"완전히 투명해 건너뜀: {kind}/{png.name}")
                 continue

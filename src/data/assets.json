@@ -119,6 +119,32 @@
       "ratio": 1.085
     }
   ],
+  "logo": [
+    {
+      "src": "/assets/logo/logo_ana.webp",
+      "w": 640,
+      "h": 357,
+      "ratio": 1.793
+    },
+    {
+      "src": "/assets/logo/logo_cnu.webp",
+      "w": 640,
+      "h": 215,
+      "ratio": 2.977
+    },
+    {
+      "src": "/assets/logo/logo_coss.webp",
+      "w": 640,
+      "h": 288,
+      "ratio": 2.222
+    },
+    {
+      "src": "/assets/logo/logo_swuniv.webp",
+      "w": 640,
+      "h": 93,
+      "ratio": 6.882
+    }
+  ],
   "pixel": [
     {
       "src": "/assets/pixel/pixel_1.webp",

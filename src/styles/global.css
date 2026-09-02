@@ -20,3 +20,41 @@ html {
   color: theme(colors.ink);
   -webkit-text-size-adjust: 100%;
 }
+
+/*
+ * 본문 안 인라인 링크. 히어로 소개 문장과 대회 규칙이 공유한다.
+ * 컴포넌트 스코프 <style> 은 다른 컴포넌트로 넘어가지 않으므로 여기 둔다.
+ * 본문 링크가 더 생기면 이 클래스만 붙인다.
+ *
+ * 색만으로 링크를 표시하지 않는다. 주황과 검정을 구분하지 못하는 사용자에게는
+ * 그냥 본문으로 보인다. 기본 상태부터 밑줄을 둔다.
+ */
+.text-link {
+  color: theme(colors.orange);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  /* 밑줄이 글자에 붙으면 한글 받침과 겹친다. 한 칸 띄운다. */
+  text-underline-offset: 0.22em;
+  /* 기본은 옅게 깔고 hover 에서 진하게 만든다. */
+  text-decoration-color: color-mix(in srgb, theme(colors.orange) 50%, transparent);
+  /* inline 을 유지한다. inline-block 으로 바꾸면 줄바꿈 자체가 막혀
+     긴 링크가 단 밖으로 넘친다. 줄이 나뉘면 밑줄도 줄마다 이어진다. */
+  display: inline;
+  transition:
+    color 150ms ease,
+    text-decoration-color 150ms ease;
+}
+
+.text-link:hover {
+  /* 토큰을 바꾸지 않고 ink 를 섞어 한 단 짙게 만든다. */
+  color: color-mix(in srgb, theme(colors.orange) 80%, theme(colors.ink));
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+}
+
+.text-link:focus-visible {
+  outline: 2px solid theme(colors.orange);
+  outline-offset: 3px;
+  border-radius: 2px;
+}

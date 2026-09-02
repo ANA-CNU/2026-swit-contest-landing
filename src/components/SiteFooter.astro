@@ -3,7 +3,11 @@
  * 푸터. 주최 표기와 로고 넷을 배치한다 — ANA, 충남대학교,
  * 소프트웨어중심대학사업단, COSS (CLAUDE.md "로고" 절).
  *
- * 로고 파일이 아직 없어 이름만 담은 플레이스홀더로 둔다.
+ * 로고는 장식이 아니라 정보이므로 alt 에 기관명을 넣는다. 각 로고는 기관
+ * 홈페이지로 가는 링크이며 새 탭에서 연다. rel 에 noopener 를 반드시 둔다 —
+ * 없으면 열린 페이지가 window.opener 로 이 페이지를 조작할 수 있다.
+ * 페이지 전체가 주황 단색 체계라 로고 4개가 각자 원색으로 들어오면 푸터가
+ * 산만해진다. 기본은 grayscale 로 낮추고 hover 에서만 원색으로 돌린다.
  */
 import { HOST, LOGOS } from '../data/contest';
 ---
@@ -15,10 +19,25 @@ import { HOST, LOGOS } from '../data/contest';
       {HOST}
     </p>
 
-    {/* TODO: 로고 파일이 준비되면 각 자리를 <img> 로 교체한다.
-        파일은 public/logos/ 에 두고 alt 에 기관명을 넣는다. */}
     <ul class="logos" aria-label="주최 및 후원 기관">
-      {LOGOS.map((name) => <li class="logos__slot">{name}</li>)}
+      {
+        LOGOS.map((logo) => (
+          <li class="logos__item">
+            {/* 링크의 접근 가능한 이름은 img 의 alt 가 제공한다.
+                a 에 aria-label 을 또 넣으면 이름이 중복 정의된다. */}
+            <a class="logo-link" href={logo.url} target="_blank" rel="noopener noreferrer">
+              <img
+                class="logo"
+                src={logo.src}
+                alt={logo.name}
+                style={`--logo-w:${logo.width}px`}
+                loading="lazy"
+                decoding="async"
+              />
+            </a>
+          </li>
+        ))
+      }
     </ul>
 
     <p class="footer__copy">SW-IT Contest 2026</p>
@@ -34,13 +53,14 @@ import { HOST, LOGOS } from '../data/contest';
   }
 
   .footer__inner {
-    max-width: 46rem;
+    /* 로고 넷을 한 줄에 놓으려면 본문 단(46rem)보다 넓어야 한다. */
+    max-width: 52rem;
     margin: 0 auto;
     padding: clamp(2rem, 5vh, 3rem) 1.5rem clamp(2.5rem, 6vh, 3.5rem);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1.75rem;
     text-align: center;
   }
 
@@ -62,26 +82,70 @@ import { HOST, LOGOS } from '../data/contest';
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.75rem;
+    /* 높이가 제각각이므로 세로 중심을 맞춘다. */
+    align-items: center;
+    gap: 1.25rem 1.75rem;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  /* 로고 자리. 파일이 들어오면 이 박스 크기에 맞춘다. */
-  .logos__slot {
+  .logos__item {
     display: flex;
     align-items: center;
-    justify-content: center;
-    min-width: 8.5rem;
-    height: 3rem;
-    padding: 0 0.75rem;
-    border: 1px dashed color-mix(in srgb, theme(colors.ink) 22%, transparent);
-    border-radius: 0.5rem;
-    color: color-mix(in srgb, theme(colors.ink) 55%, transparent);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    word-break: keep-all;
+  }
+
+  /*
+   * 높이를 고정하지 않는다. 폭만 주고 height: auto 로 두면 각 로고의 원본
+   * 종횡비대로 높이가 정해지고, 부모의 align-items: center 가 세로를 맞춘다.
+   * 폭은 contest.ts 에서 로고별로 잡았다(--logo-w).
+   */
+  /* 이미지 크기에 딱 맞게 감싼다. 안의 img 가 display: block 이라
+     인라인 여백이 생기지 않아 클릭 영역이 이미지 밖으로 번지지 않는다. */
+  .logo-link {
+    display: inline-block;
+    cursor: pointer;
+    border-radius: 4px;
+    /* 검정 기본 아웃라인을 쓰지 않는다. focus-visible 에서 주황으로 준다. */
+    outline: none;
+  }
+
+  .logo-link:focus-visible {
+    outline: 2px solid theme(colors.orange);
+    outline-offset: 4px;
+  }
+
+  .logo {
+    display: block;
+    width: calc(var(--logo-w) * var(--logo-scale, 1));
+    height: auto;
+    /* 주황 단색 체계를 흐트러뜨리지 않게 기본은 무채색으로 낮춘다. */
+    filter: grayscale(1);
+    opacity: 0.68;
+    transition:
+      filter 160ms ease,
+      opacity 160ms ease,
+      transform 160ms ease;
+  }
+
+  /* hover 와 키보드 포커스가 같은 상태가 되게 한다.
+     확대는 1.03 으로 아주 약하게만 준다. */
+  .logo-link:hover .logo,
+  .logo-link:focus-visible .logo {
+    filter: none;
+    opacity: 1;
+    transform: scale(1.03);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .logo {
+      transition: filter 160ms ease, opacity 160ms ease;
+    }
+
+    .logo-link:hover .logo,
+    .logo-link:focus-visible .logo {
+      transform: none;
+    }
   }
 
   .footer__copy {
@@ -90,11 +154,19 @@ import { HOST, LOGOS } from '../data/contest';
     font-size: 0.8125rem;
   }
 
+  /* 640px 이하 — 2열로 접는다. 폭도 함께 줄여 두 열이 화면에 들어오게 한다. */
   @media (max-width: 640px) {
-    .logos__slot {
-      min-width: 7rem;
-      height: 2.75rem;
-      font-size: 0.75rem;
+    .logos {
+      display: grid;
+      grid-template-columns: repeat(2, auto);
+      justify-content: center;
+      align-items: center;
+      justify-items: center;
+      gap: 1.5rem 1rem;
+      /* 2열이 390px 폭에 들어가는 최대 배율.
+         가장 넓은 소프트웨어중심대학사업단(종횡비 6.86) 때문에 데스크톱 크기
+         그대로는 두 열이 들어가지 않는다. */
+      --logo-scale: 0.78;
     }
   }
 </style>

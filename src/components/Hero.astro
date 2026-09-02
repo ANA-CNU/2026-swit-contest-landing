@@ -32,7 +32,7 @@ import {
   objectVars,
   staggerDelays,
 } from '../data/hero-layout';
-import { VENUE } from '../data/contest';
+import { LINKS, VENUE } from '../data/contest';
 
 const delays = staggerDelays(HERO_OBJECTS);
 
@@ -103,11 +103,16 @@ const objects = HERO_OBJECTS.map((o, i) => ({
       </div>
     </dl>
 
-    {/* 강조 구간은 <strong> 앞뒤에 공백을 두지 않는다. 개행이 공백으로 바뀌어
-        'ANA 에서' 처럼 띄어져 버린다. */}
+    {/* 강조 구간은 태그 앞뒤에 공백을 두지 않는다. 개행이 공백으로 바뀌어
+        'ANA 에서' 처럼 띄어져 버린다.
+        ANA 는 링크(.text-link)이고 '팀으로 출전' 은 단순 강조(<strong>)다.
+        링크가 아닌 쪽에 밑줄이 붙으면 안 되므로 클래스를 나눠 쓴다. */}
     <p class="intro">
-      SW-IT Contest는 충남대학교 컴퓨터인공지능학부 알고리즘 동아리 <strong
-        >ANA</strong
+      SW-IT Contest는 충남대학교 컴퓨터인공지능학부 알고리즘 동아리 <a
+        class="text-link"
+        href={LINKS.ana}
+        target="_blank"
+        rel="noopener noreferrer">ANA</a
       >에서 주최하는 프로그래밍 대회로, <strong>팀으로 출전</strong>하여 알고리즘 문제를
       해결하는 대회입니다.
     </p>

@@ -73,8 +73,24 @@ import {
       대회 규칙
     </h2>
 
+    {/* 링크와 뒤 문장 사이에 개행을 두지 않는다. 공백이 하나 더 생긴다. */}
     <ul class="rules">
-      {RULES.allowed.map((item) => <li class="rules__item">{item}</li>)}
+      {
+        RULES.allowed.map((item) => (
+          <li class="rules__item">
+            {item.lead && (
+              <a
+                class="text-link"
+                href={item.lead.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {item.lead.text}
+              </a>
+            )}{item.text}
+          </li>
+        ))
+      }
     </ul>
 
     <p class="ban">
