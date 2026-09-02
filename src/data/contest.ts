@@ -42,6 +42,28 @@ export const SCHEDULE = [
 /** 대회 장소. */
 export const VENUE = '충남대학교 제3학생회관 (N-7) 1층 영탑홀';
 
+/**
+ * 영탑홀 좌표. 주소 지오코딩을 하지 않고 이 값을 그대로 쓴다.
+ * 마커가 실제 위치와 어긋나면 아래 두 숫자만 조정하면 된다.
+ *
+ * level 은 카카오맵 확대 수준이며 작을수록 확대된다.
+ * 3 이면 건물 하나가 식별되는 정도다.
+ */
+export const VENUE_COORD = {
+  lat: 36.3716235,
+  lng: 127.3450588,
+  level: 3,
+  label: '영탑홀',
+} as const;
+
+/**
+ * 카카오맵 길찾기 주소. 형식은 /link/to/이름,위도,경도 다.
+ * 지도가 뜨지 않는 상황에서도 이 링크는 항상 표시된다.
+ */
+export const KAKAO_DIRECTIONS_URL = `https://map.kakao.com/link/to/${encodeURIComponent(
+  VENUE_COORD.label,
+)},${VENUE_COORD.lat},${VENUE_COORD.lng}`;
+
 /** 참가 대상. */
 export const ELIGIBILITY = [
   '충남대학교 및 대전·충청 지역 소재 대학 재학생',

@@ -1,0 +1,282 @@
+---
+/**
+ * 대회 장소 지도. 카카오맵 JavaScript SDK 를 쓴다.
+ *
+ * CLAUDE.md 의 "외부 API 연동을 추가하지 않는다" 에 대한 유일한 예외다.
+ * 키는 PUBLIC_KAKAO_MAP_KEY 환경변수로만 들어온다.
+ *
+ * 설계 원칙 — 지도는 부가 정보다.
+ *   위치를 전달하는 주된 수단은 섹션 본문의 주소 텍스트이고, 지도는 그 위에
+ *   얹는 보조 수단이다. 그래서 키가 없거나 SDK 로드가 실패하면 지도 자리를
+ *   통째로 없애고 주소와 길찾기 링크만 남긴다. 빈 상자나 에러 문구를 두지
+ *   않는다. 리포지터리가 Public 이라 .env 없이 클론하거나 CI 에서 빌드하는
+ *   경우가 실제로 생기며, 그때도 페이지는 온전해야 한다.
+ *
+ * 로딩 시점
+ *   지도는 페이지 하단에 있다. 초기 로딩에 외부 스크립트를 끼워 넣을 이유가
+ *   없으므로 섹션이 뷰포트에 접근할 때 IntersectionObserver 로 불러온다.
+ */
+import { KAKAO_DIRECTIONS_URL, VENUE, VENUE_COORD } from '../data/contest';
+
+// 빌드 시점에 정해진다. 값이 없으면 아래 지도 컨테이너 자체가 렌더되지 않고,
+// 클라이언트 스크립트도 붙을 대상이 없어 SDK 를 부르지 않는다.
+const kakaoKey = (import.meta.env.PUBLIC_KAKAO_MAP_KEY ?? '').trim();
+---
+
+{
+  kakaoKey && (
+    /*
+     * 지도 타일은 스크린리더에 의미가 없다. role="img" 와 레이블로 하나의
+     * 대상으로 묶는다. 실제 위치 정보는 위의 주소 텍스트가 전달한다.
+     *
+     * hidden 으로 시작한다. 지도가 실제로 그려지는 순간에만 자리를 차지하므로
+     * 실패했을 때 빈 상자가 남지 않는다.
+     */
+    <div
+      class="map"
+      hidden
+      role="img"
+      aria-label={`${VENUE} 위치 지도`}
+      data-kakao-map
+      data-key={kakaoKey}
+      data-lat={VENUE_COORD.lat}
+      data-lng={VENUE_COORD.lng}
+      data-level={VENUE_COORD.level}
+      data-label={VENUE_COORD.label}
+    />
+  )
+}
+
+<a class="map-link" href={KAKAO_DIRECTIONS_URL} target="_blank" rel="noopener noreferrer">
+  카카오맵에서 길찾기
+</a>
+
+<style>
+  @reference '../styles/global.css';
+
+  /*
+   * 고정 높이를 주지 않는다. 16:9 는 폭이 좁아질수록 높이도 함께 줄어서
+   * 모바일에서 지도가 화면을 다 먹지 않는다. 4:3 이나 1:1 은 반대로
+   * 좁은 화면에서 더 길어지므로 쓰지 않는다.
+   */
+  .map {
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    margin: 1.25rem 0 0;
+    border: 1px solid color-mix(in srgb, theme(colors.ink) 12%, transparent);
+    border-radius: 12px;
+    /* 지도 타일이 둥근 모서리 밖으로 나오지 않게 한다. */
+    overflow: hidden;
+  }
+
+  /* 마커 위 커스텀 오버레이. SDK 가 지도 내부에 직접 넣는 요소라
+     Astro 의 스코프 선택자가 붙지 않는다. :global 로 정의한다. */
+  .map :global(.map-pin) {
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    background-color: theme(colors.orange);
+    color: theme(colors.paper);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px color-mix(in srgb, theme(colors.ink) 28%, transparent);
+  }
+
+  /* 지도가 없을 때도 이 버튼은 남는다. 위치를 확인할 최소한의 경로다. */
+  .map-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin: 1rem 0 0;
+    padding: 0.5rem 1rem;
+    border: 1px solid theme(colors.orange);
+    border-radius: 9999px;
+    color: theme(colors.orange);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .map-link::after {
+    /* 새 탭으로 열린다는 표시. 텍스트가 아니라 도형이므로 읽히지 않게 둔다. */
+    content: '↗';
+    font-size: 0.875em;
+  }
+
+  .map-link:hover {
+    background-color: theme(colors.orange);
+    color: theme(colors.paper);
+  }
+
+  .map-link:focus-visible {
+    outline: 2px solid theme(colors.orange);
+    outline-offset: 3px;
+  }
+</style>
+
+<script>
+  /*
+   * 카카오맵 SDK 로더.
+   *
+   * autoload=false 는 선택이 아니라 필수다. 지우지 마라.
+   *
+   *   dapi.kakao.com/v2/maps/sdk.js 로 내려오는 4KB 는 본체가 아니라 로더다.
+   *   autoload 를 끄지 않으면 이 로더가 본체(kakao.js)를 document.write 로
+   *   붙인다. document.write 는 HTML 파싱 중에만 동작한다. 공식 문서 예시가
+   *   먹히는 이유가 그것이다 — <script> 태그가 문서에 박혀 있어 파싱 중에 실행된다.
+   *
+   *   우리는 지도가 화면에 접근할 때 스크립트를 동적으로 주입한다. 그 시점에는
+   *   파서가 이미 끝나 document.write 가 무시되고 본체가 영영 오지 않는다.
+   *   실측한 onload 시점의 kakao.maps 키 목록:
+   *     onloadcallbacks, readyState, URI_FUNC, VERSION, RESOURCE_PATH,
+   *     RESOURCE_DOMAIN, apikey, version, load        ← Map 이 없다
+   *   게다가 로더가 readyState 를 2(로드 완료)로 세워 두므로, 이 상태에서
+   *   kakao.maps.load(cb) 를 불러도 본체 없이 콜백만 즉시 실행된다.
+   *
+   *   autoload=false 면 로더가 document.write 를 쓰지 않고, kakao.maps.load(cb)
+   *   가 본체를 <script> 로 붙인 뒤 콜백을 부른다. 동적 주입에서 유일하게
+   *   동작하는 경로다.
+   *
+   * URL 은 프로토콜 상대 경로 대신 https 를 명시한다(문서 예시는 //dapi... 다).
+   *
+   * 실패 경로를 fail() 하나로 모은다. 어느 쪽이든 지도 컨테이너를 DOM 에서
+   * 제거하고 끝낸다. 그러면 주소 텍스트와 길찾기 버튼만 남은 상태가 된다.
+   * 개발 중에는 어느 경로로 빠졌는지 console.warn 으로 알린다.
+   * 프로덕션 빌드에서는 이 분기가 통째로 사라지고 조용히 폴백한다.
+   */
+  type KakaoNs = {
+    maps: {
+      load: (cb: () => void) => void;
+      LatLng: new (lat: number, lng: number) => unknown;
+      Map: new (el: HTMLElement, opts: Record<string, unknown>) => {
+        addControl: (c: unknown, pos: unknown) => void;
+      };
+      Marker: new (opts: Record<string, unknown>) => unknown;
+      CustomOverlay: new (opts: Record<string, unknown>) => unknown;
+      ZoomControl: new () => unknown;
+      ControlPosition: { RIGHT: unknown };
+    };
+  };
+
+  type FailReason = 'no-key' | 'network' | 'sdk-missing' | 'timeout' | 'init';
+
+  const FAIL_HINT: Record<FailReason, string> = {
+    'no-key':
+      'PUBLIC_KAKAO_MAP_KEY 가 비어 있다. .env 를 만들고 JavaScript 앱 키를 넣어라 (.env.example 참고).',
+    network:
+      'SDK 스크립트를 불러오지 못했다. 네트워크 차단이거나, 카카오가 스크립트가 아닌 응답(403 JSON 등)을 돌려줘 브라우저가 막은 경우다. DevTools Network 탭에서 dapi.kakao.com 요청의 상태 코드와 본문을 확인해라.',
+    'sdk-missing':
+      '스크립트는 실행됐는데 kakao.maps.Map 이 없다. 앱 키가 잘못됐거나 카카오 콘솔에 플랫폼 도메인이 등록되지 않았을 수 있다.',
+    timeout: '8초 안에 지도가 생성되지 않았다. SDK 응답이 지연되거나 중간에 멈췄다.',
+    init: '지도 생성 중 예외가 발생했다.',
+  };
+
+  const box = document.querySelector<HTMLElement>('[data-kakao-map]');
+
+  if (box) {
+    // 컨테이너는 hidden 이라 관측 대상이 될 수 없다(레이아웃 박스가 없다).
+    // 지도가 속한 섹션을 대신 관측한다.
+    const target = box.closest('section') ?? box;
+    const io = new IntersectionObserver(
+      (entries, obs) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        obs.disconnect();
+        boot(box);
+      },
+      // 화면에 닿기 전에 미리 시작해 지도가 늦게 뜨는 인상을 줄인다.
+      { rootMargin: '250px 0px' },
+    );
+    io.observe(target);
+  }
+
+  function boot(el: HTMLElement) {
+    let settled = false;
+    const fail = (reason: FailReason, detail?: unknown) => {
+      if (settled) return;
+      settled = true;
+      el.remove();
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[VenueMap] 지도를 표시하지 못했다 (${reason}) — 주소와 길찾기 링크로 폴백한다.
+  ${FAIL_HINT[reason]}`,
+          detail ?? '',
+        );
+      }
+    };
+
+    const key = el.dataset.key ?? '';
+    // 키가 비어 있으면 SDK 를 아예 요청하지 않는다.
+    if (!key) {
+      fail('no-key');
+      return;
+    }
+
+    // onload/onerror 어느 쪽도 오지 않는 경우를 위한 안전망.
+    const timer = window.setTimeout(() => fail('timeout'), 8000);
+
+    const script = document.createElement('script');
+    // 프로토콜 상대 경로(//dapi...)를 쓰지 않는다. https 를 명시한다.
+    // autoload=false 의 이유는 위 주석에 있다.
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(key)}&autoload=false`;
+    script.async = true;
+    script.onerror = () => fail('network');
+    script.onload = () => {
+      const kakao = (window as unknown as { kakao?: KakaoNs }).kakao;
+      // 이 시점에 있는 것은 로더뿐이다. 생성자는 아직 없다.
+      if (typeof kakao?.maps?.load !== 'function') {
+        fail('sdk-missing', kakao);
+        return;
+      }
+      kakao.maps.load(() => {
+        // 본체가 실제로 붙었는지는 생성자로 확인한다. 로더만 온 상태에서
+        // 콜백이 불릴 수 있으므로 load 가 불렸다는 사실만으로 판단하지 않는다.
+        if (!kakao.maps.Map) {
+          fail('sdk-missing', kakao.maps);
+          return;
+        }
+        try {
+          draw(kakao, el);
+          settled = true;
+          window.clearTimeout(timer);
+        } catch (e) {
+          fail('init', e);
+        }
+      });
+    };
+    document.head.appendChild(script);
+  }
+
+  function draw(kakao: KakaoNs, el: HTMLElement) {
+    // 여기서 비로소 자리를 차지한다. 지도는 크기가 있어야 초기화된다.
+    el.hidden = false;
+
+    const pos = new kakao.maps.LatLng(Number(el.dataset.lat), Number(el.dataset.lng));
+    const map = new kakao.maps.Map(el, {
+      center: pos,
+      level: Number(el.dataset.level),
+      // 페이지를 스크롤하다 지도 위에 들어왔을 때 휠을 뺏기지 않게 한다.
+      // 대신 확대/축소 컨트롤을 붙여 확대 수단을 남긴다.
+      scrollwheel: false,
+    });
+    map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+
+    new kakao.maps.Marker({ map, position: pos });
+
+    // 라벨은 문자열 연결이 아니라 DOM 으로 만든다. textContent 를 쓰면
+    // 값에 무엇이 들어오든 마크업으로 해석되지 않는다.
+    const pin = document.createElement('div');
+    pin.className = 'map-pin';
+    pin.textContent = el.dataset.label ?? '';
+    new kakao.maps.CustomOverlay({
+      map,
+      position: pos,
+      content: pin,
+      // 마커 위쪽에 띄운다.
+      yAnchor: 2.2,
+    });
+  }
+</script>

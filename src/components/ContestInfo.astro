@@ -12,6 +12,7 @@
  * 배경은 전부 흰색이다. 섹션마다 배경색을 바꾸지 않는다.
  * 섹션 진입 애니메이션은 없다 — 히어로의 분사가 페이지의 유일한 모션이다.
  */
+import VenueMap from './VenueMap.astro';
 import {
   CONTEST_DATE,
   ELIGIBILITY,
@@ -52,7 +53,9 @@ import {
       <img class="heading__icon" src={SECTION_ICON.venue} alt="" aria-hidden="true" />
       대회 장소
     </h2>
+    {/* 지도가 없어도 위치를 알 수 있어야 한다. 주소는 항상 표시된다. */}
     <p class="venue">{VENUE}</p>
+    <VenueMap />
   </section>
 
   {/* ── 3. 참가 대상 ───────────────────────────────── */}
@@ -127,8 +130,7 @@ import {
   {/* ── 6. 참가 신청 ───────────────────────────────── */}
   <section id="apply" class="section section--apply">
     <h2 class="heading heading--plain">참가 신청</h2>
-    {/* TODO: 참가 신청 구글폼 주소가 확정되면 href 를 교체한다. */}
-    <a class="apply-cta" href="#">구글폼으로 신청하기</a>
+    <a class="apply-cta" href="https://forms.gle/uPfh6FU3BDJEsYd8A">구글폼으로 신청하기</a>
   </section>
 </div>
 

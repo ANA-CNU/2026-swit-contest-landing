@@ -8,8 +8,10 @@
 1. 포스터에 실린 대회 정보를 전달한다.
 2. 참가 신청 구글폼으로 보낸다.
 
-DB, 인증, 폼 처리, 서버 로직은 없다. 외부 API 연동도 없다.
-런타임에 불러오는 외부 자원은 Pretendard 웹폰트 CDN 하나뿐이다.
+DB, 인증, 폼 처리, 서버 로직은 없다.
+런타임에 불러오는 외부 자원은 두 가지뿐이다 — Pretendard 웹폰트 CDN 과
+카카오맵 SDK. 카카오맵은 아래 "카카오맵" 절에 적은 명시적 예외이며,
+그 밖의 외부 API 는 연동하지 않는다.
 빌드 결과물은 순수 정적 파일이며 `2026-swit-contest.anacnu.kr`에 서빙된다.
 
 ## 스택
@@ -229,6 +231,112 @@ CSS `filter: drop-shadow()`로 무비용 재현한다.
 
 푸터에 넷을 배치한다 — ANA, 충남대학교, 소프트웨어중심대학사업단, COSS.
 
+## 카카오맵
+
+"대회 장소" 섹션에 영탑홀 위치 지도를 넣는다. 이 프로젝트에서 유일하게 허용된
+외부 API 연동이며, 히어로 애니메이션·섹션 네비게이션 외에 JS 를 쓰는 유일한 곳이다.
+`src/components/VenueMap.astro` 하나가 전부를 담당한다.
+
+- 카카오맵 JavaScript SDK 를 쓴다. 스크립트 URL 에 `https://` 를 명시한다.
+  프로토콜 상대 경로(`//dapi...`)를 쓰지 않는다.
+- SDK 는 지도 섹션이 뷰포트에 접근할 때 IntersectionObserver 로 불러온다.
+  지도는 페이지 하단에 있으므로 초기 로딩에 외부 스크립트를 끼워 넣지 않는다.
+- 좌표는 `src/data/contest.ts` 의 `VENUE_COORD` 에 상수로 둔다.
+  주소 지오코딩을 하지 않는다.
+
+### `autoload=false` 를 지우지 마라
+
+공식 문서 예시에는 `autoload` 파라미터도 `kakao.maps.load()` 도 없다.
+그대로 따라 하면 이 프로젝트에서는 지도가 뜨지 않는다. 2026-09-02 실측이다.
+
+`dapi.kakao.com/v2/maps/sdk.js` 로 내려오는 4145바이트는 본체가 아니라 **로더**다.
+로더 내부는 이렇게 생겼다.
+
+```js
+if ("false" !== l.autoload) {
+  for (...) document.write('<script src="' + kakao.js + '"><\/script>');
+  e.readyState = 2;
+}
+e.load = function (n) { ... };
+```
+
+- `autoload` 를 끄지 않으면 본체를 **`document.write`** 로 붙인다.
+  `document.write` 는 HTML 파싱 중에만 동작한다. 문서 예시가 먹히는 이유가 그것이다 —
+  `<script>` 태그가 문서에 박혀 있어 파서가 실행한다.
+- 우리는 IntersectionObserver 로 나중에 주입한다. 그 시점엔 파서가 끝나 있어
+  `document.write` 가 무시되고 본체가 영영 오지 않는다.
+- 게다가 로더가 `readyState` 를 2(로드 완료)로 세워 두므로, 이 상태에서
+  `kakao.maps.load(cb)` 를 불러도 본체 없이 콜백만 즉시 실행된다.
+
+`autoload` 없이 주입했을 때 `script.onload` 시점의 `kakao.maps` 키 목록이다.
+
+```
+onloadcallbacks, readyState, URI_FUNC, VERSION, RESOURCE_PATH,
+RESOURCE_DOMAIN, apikey, version, load          ← Map 이 없다
+```
+
+`autoload=false` 를 붙이면 `kakao.maps.load(cb)` 가 본체를 `<script>` 로 붙인 뒤
+콜백을 부른다. 그 콜백 안에서야 `Map`, `Marker`, `CustomOverlay` 가 생긴다.
+**동적 주입에서 동작하는 유일한 경로다.**
+
+검사는 두 단계로 나눈다. `onload` 에서는 `kakao.maps.load` 가 함수인지 보고,
+`load()` 콜백 안에서 `kakao.maps.Map` 이 실제로 생겼는지 다시 본다.
+로더만 온 상태에서도 콜백이 불릴 수 있어 한 쪽만으로는 판정이 안 된다.
+
+### 환경변수
+
+```
+PUBLIC_KAKAO_MAP_KEY   카카오 개발자 콘솔의 JavaScript 앱 키
+```
+
+`.env.example` 이 형식과 발급 절차를 담고 있다. `.env` 는 커밋하지 않는다.
+`PUBLIC_` 접두사가 붙은 값은 빌드 결과물에 그대로 들어가므로 비밀 값을 넣지 않는다.
+카카오 JavaScript 키는 도메인 제한으로 보호되는 공개 키다.
+
+**키만으로는 지도가 뜨지 않는다.** 카카오 개발자 콘솔의
+앱 설정 → 플랫폼 → Web → 사이트 도메인에 배포 도메인과 `http://localhost:4321`
+을 등록해야 한다.
+
+### 지도가 없을 때
+
+지도는 부가 정보다. 위치를 전달하는 주된 수단은 섹션 본문의 주소 텍스트이며,
+지도는 그 위에 얹는 보조 수단이다. 아래 네 경우 모두 **지도 컨테이너를 DOM 에서
+제거하고** 주소 텍스트와 "카카오맵에서 길찾기" 링크만 남긴다.
+빈 상자나 에러 문구를 남기지 않는다.
+
+- `.env` 가 없거나 `PUBLIC_KAKAO_MAP_KEY` 가 비어 있다 (빌드 시점에 판정,
+  컨테이너 자체가 렌더되지 않는다)
+- SDK 스크립트 로드 실패 (네트워크 차단, 또는 카카오가 403 JSON 을 돌려줘
+  브라우저가 `ERR_BLOCKED_BY_ORB` 로 막은 경우)
+- 스크립트는 내려왔지만 생성자가 없음 (도메인 미등록 등)
+- 시간 제한 초과. `onload`/`onerror` 어느 쪽도 오지 않는 경우가 있다
+- 지도 생성 중 예외
+
+`import.meta.env.DEV` 일 때만 어느 경로로 빠졌는지 `console.warn` 으로 남긴다.
+프로덕션 빌드에서는 Vite 가 이 분기를 통째로 지운다 — 산출물에 메시지 문자열이
+하나도 남지 않는 것을 확인했다.
+
+### 콘솔 설정이 막고 있을 때 나오는 응답
+
+증상은 똑같이 "폴백만 보인다" 이므로 응답 본문으로 구분한다.
+브라우저는 ORB 로 본문을 감추니 `curl` 로 직접 받아야 한다.
+
+```
+403 {"errorType":"NotAuthorizedError",
+     "message":"App(...) disabled OPEN_MAP_AND_LOCAL service."}
+  → 제품 설정 → 카카오맵 → 활성화 설정이 꺼져 있다
+
+401 {"errorType":"AccessDeniedError",
+     "message":"domain mismatched! caller=... check out registered web domains."}
+  → 앱 설정 → 플랫폼 → Web 사이트 도메인에 그 주소가 없다
+```
+
+도메인 검사가 서비스 검사보다 먼저 돈다. 401 이 뜨면 도메인부터 등록해야
+그 다음 문제가 보인다.
+
+리포지터리가 Public 이라 `.env` 없이 클론하는 경우가 있고 CI 빌드도 같은
+상황이다. 그때 페이지가 깨지면 안 된다.
+
 ## 배포
 
 - `npm run build` 결과인 `dist/`를 정적 서빙한다.
@@ -241,5 +349,8 @@ CSS `filter: drop-shadow()`로 무비용 재현한다.
 - 대회 정보를 추측해 채우지 않는다. 확정되지 않은 값은 `TODO` 주석과 함께 비워둔다.
 - `asset/`을 수정하지 않는다. 원본 에셋 디렉터리는 읽기 전용이다.
 - 애니메이션에 난수를 쓰지 않는다.
-- 다크 테마, 백엔드, 외부 API 연동을 추가하지 않는다.
+- 다크 테마와 백엔드를 추가하지 않는다.
+- 외부 API 는 카카오맵 하나만 쓴다. 그 밖의 연동을 추가하지 않는다.
+- JS 는 세 곳에만 쓴다 — 히어로 애니메이션, 섹션 네비게이션의 스크롤 위치 표시,
+  카카오맵 로딩. 그 밖의 동작을 JS 로 붙이지 않는다.
 - 애니메이션 라이브러리를 설치하지 않는다.
