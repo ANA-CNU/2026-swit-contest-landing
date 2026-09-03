@@ -1,0 +1,85 @@
+# GitHub 저장소 시크릿만 사용해 운영 서버에 정적 사이트 컨테이너를 배포하는 워크플로입니다.
+name: Deploy
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+      PUBLIC_KAKAO_MAP_API: ${{ secrets.PUBLIC_KAKAO_MAP_API }}
+      DEPLOY_REPOSITORY_URL: ${{ secrets.DEPLOY_REPOSITORY_URL }}
+      DEPLOY_BRANCH: ${{ secrets.DEPLOY_BRANCH }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+    steps:
+      # 시크릿 브랜치와 일치하는 push 또는 수동 실행만 실제 배포한다.
+      - name: Check deployment branch
+        id: branch
+        run: |
+          set -eu
+          : "${DEPLOY_BRANCH:?DEPLOY_BRANCH secret is required}"
+          if [ "${GITHUB_REF_NAME}" != "${DEPLOY_BRANCH}" ]; then
+            echo "Skipping deployment: ${GITHUB_REF_NAME} is not the deployment branch."
+            echo 'deploy=false' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'deploy=true' >> "${GITHUB_OUTPUT}"
+          fi
+
+      # 호스트 키 검사와 저장을 끄므로 위조된 호스트(MITM)는 탐지할 수 없다.
+      - name: Deploy through SSH
+        if: steps.branch.outputs.deploy == 'true'
+        run: |
+          set -eu
+          : "${DEPLOY_HOST:?DEPLOY_HOST secret is required}"
+          : "${DEPLOY_PORT:?DEPLOY_PORT secret is required}"
+          : "${DEPLOY_USER:?DEPLOY_USER secret is required}"
+          : "${DEPLOY_SSH_PRIVATE_KEY:?DEPLOY_SSH_PRIVATE_KEY secret is required}"
+          : "${PUBLIC_KAKAO_MAP_API:?PUBLIC_KAKAO_MAP_API secret is required}"
+          : "${DEPLOY_REPOSITORY_URL:?DEPLOY_REPOSITORY_URL secret is required}"
+          : "${DEPLOY_BRANCH:?DEPLOY_BRANCH secret is required}"
+          : "${DEPLOY_PATH:?DEPLOY_PATH secret is required}"
+
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${DEPLOY_SSH_PRIVATE_KEY}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          {
+          # printf %q는 시크릿 값을 원격 Bash 변수에 안전하게 전달한다.
+          printf 'DEPLOY_PATH=%q\n' "${DEPLOY_PATH}"
+          printf 'DEPLOY_REPOSITORY_URL=%q\n' "${DEPLOY_REPOSITORY_URL}"
+          printf 'DEPLOY_BRANCH=%q\n' "${DEPLOY_BRANCH}"
+          printf 'PUBLIC_KAKAO_MAP_API=%q\n' "${PUBLIC_KAKAO_MAP_API}"
+          cat <<'REMOTE_SCRIPT'
+          set -eu
+
+          # 운영 경로는 지정된 ana 디렉터리 아래여야 한다.
+          case "${DEPLOY_PATH}" in
+            /home/ana/Desktop/ana/*) ;;
+            *) echo 'DEPLOY_PATH must be below /home/ana/Desktop/ana.' >&2; exit 1 ;;
+          esac
+
+          if [ -d "${DEPLOY_PATH}/.git" ]; then
+            git -C "${DEPLOY_PATH}" fetch --prune origin "${DEPLOY_BRANCH}"
+            git -C "${DEPLOY_PATH}" checkout --force -B "${DEPLOY_BRANCH}" "origin/${DEPLOY_BRANCH}"
+          else
+            if [ -e "${DEPLOY_PATH}" ] && [ -n "$(find "${DEPLOY_PATH}" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+              echo 'DEPLOY_PATH exists but is not a Git checkout.' >&2
+              exit 1
+            fi
+            mkdir -p "$(dirname "${DEPLOY_PATH}")"
+            git clone --branch "${DEPLOY_BRANCH}" --single-branch "${DEPLOY_REPOSITORY_URL}" "${DEPLOY_PATH}"
+          fi
+
+          umask 077
+          printf 'PUBLIC_KAKAO_MAP_KEY=%s\n' "${PUBLIC_KAKAO_MAP_API}" > "${DEPLOY_PATH}/.env"
+
+          cd "${DEPLOY_PATH}"
+          docker compose -f deploy/docker-compose.prod.yaml --env-file .env up -d --build
+          REMOTE_SCRIPT
+          } | ssh -i ~/.ssh/deploy_key -p "${DEPLOY_PORT}" -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s'

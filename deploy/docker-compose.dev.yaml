@@ -1,0 +1,9 @@
+# 로컬 개발용 Astro 서버입니다; 브라우저 테스트를 위해 4321 포트만 공개하고 볼륨은 사용하지 않습니다.
+services:
+  site:
+    build:
+      context: ..
+      dockerfile: Dockerfile.dev
+    ports:
+      - "4321:4321"
+    restart: unless-stopped

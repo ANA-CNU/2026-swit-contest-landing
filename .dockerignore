@@ -1,0 +1,11 @@
+# Docker 빌드에 필요 없는 로컬·민감 파일을 제외해 빌드 컨텍스트와 이미지 노출을 줄입니다.
+.git
+.omo
+.env
+.env.*
+node_modules
+dist
+.astro
+*.log
+Dockerfile*
+deploy

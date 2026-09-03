@@ -1,0 +1,15 @@
+# 로컬에서 Astro 개발 서버를 실행하기 위한 단순한 개발 이미지입니다; 소스 볼륨 없이도 테스트할 수 있습니다.
+FROM node:22-bookworm
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-pip \
+    && pip3 install --break-system-packages --no-cache-dir Pillow \
+    && rm -rf /var/lib/apt/lists/*
+COPY . .
+RUN python3 scripts/build-assets.py
+
+EXPOSE 4321
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

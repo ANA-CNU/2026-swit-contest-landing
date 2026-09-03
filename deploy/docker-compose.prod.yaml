@@ -1,0 +1,17 @@
+# 운영용 정적 사이트 컨테이너입니다; 외부 Nginx 네트워크에 연결하고 호스트 포트는 점유하지 않습니다.
+services:
+  2026-swit-site:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_KAKAO_MAP_KEY: "${PUBLIC_KAKAO_MAP_KEY:?PUBLIC_KAKAO_MAP_KEY must be set}"
+    expose:
+      - "80"
+    networks:
+      - dmoj_nginx_network
+    restart: unless-stopped
+
+networks:
+  dmoj_nginx_network:
+    external: true
