@@ -118,18 +118,66 @@ import { SECTIONS } from '../data/contest';
 
   if (sections.length > 0) {
     const nav = document.querySelector('.nav');
-    const navH = Math.round(nav?.getBoundingClientRect().height ?? 0);
     const intersecting = new Set<string>();
 
-    const paint = () => {
+    /*
+     * 판정 기준선을 미리 재 둔다.
+     *
+     * 기준선은 앵커가 착지하는 위치, 즉 그 섹션의 scroll-margin-top 이다.
+     * 예전에는 paint() 안에서 매번 getComputedStyle 을 불렀는데, 아래 스크롤
+     * 리스너가 붙은 뒤로는 그게 프레임마다 6번 강제 스타일 계산이 된다.
+     * 이 값은 리사이즈 때만 바뀌므로 그때만 다시 잰다.
+     */
+    let navH = 0;
+    const lines = new Map<string, number>();
+    const measure = () => {
+      navH = Math.round(nav?.getBoundingClientRect().height ?? 0);
+      for (const section of sections) {
+        lines.set(section.id, parseFloat(getComputedStyle(section).scrollMarginTop) || navH);
+      }
+    };
+    measure();
+
+    // 마지막으로 칠한 값. 바뀔 때만 DOM 을 만진다.
+    let current: string | null = null;
+
+    const apply = (best: string | null) => {
+      if (best === current) return;
+      current = best;
+      for (const [id, link] of links) {
+        if (best === id) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+      }
+    };
+
+    /*
+     * 필을 눌러 이동하는 동안에는 표시를 목표에 고정한다.
+     *
+     * 아래 measure 로직은 "기준선을 지난 것들 중 마지막" 을 고른다. 이 규칙은
+     * 이동 방향에 따라 비대칭이다.
+     *   위로 갈 때   출발 섹션이 몇 px 만 움직여도 기준선 위로 빠져나가서
+     *               목표가 이동 초반에 활성이 된다. 즉시 켜지는 것처럼 보인다.
+     *   아래로 갈 때 목표는 착지하는 순간에야 기준선에 닿는다. 그래서 이동이
+     *               끝날 때까지 한 칸 앞 섹션이 남아 한 박자 늦게 보인다.
+     *
+     * 누른 필은 바로 켜지는 게 맞다. 그래서 클릭 시 목표로 고정하고 실제로
+     * 도달하면 푼다. 고정 중에는 지나가는 섹션으로 바꾸지 않으므로 이동 도중
+     * 필이 연달아 깜빡이는 것도 사라진다.
+     */
+    let locked: string | null = null;
+    let unlockTimer = 0;
+
+    const unlock = () => {
+      locked = null;
+      window.clearTimeout(unlockTimer);
+    };
+
+    const measureBest = (): string | null => {
       // 지금 "읽고 있는" 섹션 = 상단(네비게이션 아래)을 이미 지난 것들 중 마지막.
       // 교차 비율로 고르면 두 섹션이 다 보일 때 동률이 되어 아래쪽이 뽑힌다.
       let best: string | null = null;
       for (const section of sections) {
-        // 기준선은 앵커가 착지하는 위치, 즉 그 섹션의 scroll-margin-top 이다.
-        // navH 만 쓰면 앵커로 이동했을 때 한 칸 앞 섹션이 활성으로 남는다.
-        const line = parseFloat(getComputedStyle(section).scrollMarginTop) || navH;
-        if (section.getBoundingClientRect().top <= line + 4) best = section.id;
+        if (section.getBoundingClientRect().top <= lines.get(section.id)! + 4) best = section.id;
       }
       // 마지막 섹션은 문서 끝이라 착지선까지 올라오지 못한다.
       // 최하단에 닿았으면 마지막 섹션을 현재로 본다.
@@ -141,11 +189,100 @@ import { SECTIONS } from '../data/contest';
       if (best === null) {
         best = sections.find((s) => intersecting.has(s.id))?.id ?? null;
       }
-      for (const [id, link] of links) {
-        if (best === id) link.setAttribute('aria-current', 'true');
-        else link.removeAttribute('aria-current');
-      }
+      return best;
     };
+
+    const paint = () => {
+      const best = measureBest();
+      if (locked !== null) {
+        // 목표에 도달했으면 고정을 푼다. 그 전에는 표시를 바꾸지 않는다.
+        if (best === locked) unlock();
+        return;
+      }
+      apply(best);
+    };
+
+    /*
+     * 스크롤 위치를 직접 따라간다.
+     *
+     * IntersectionObserver 콜백만으로는 부족하다. 콜백은 임계값을 지날 때만
+     * 오는데, 부드러운 이동(scroll-behavior: smooth)의 마지막 구간에서 임계값을
+     * 지나지 않으면 갱신이 그대로 멈춘다. 실측으로 아래로 가는 전이 15건이
+     * 전부 한 칸 앞 섹션을 활성으로 남겼다.
+     *
+     * rAF 로 합쳐 한 프레임에 한 번만 계산하고, 결과가 바뀔 때만 DOM 을 쓴다.
+     * paint() 는 getBoundingClientRect 6번뿐이고 레이아웃을 건드리지 않는다.
+     */
+    let queued = false;
+    const schedule = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        paint();
+      });
+    };
+    window.addEventListener('scroll', schedule, { passive: true });
+
+    // 이동 중에 사용자가 직접 스크롤하면 고정을 푼다. 그러지 않으면 목표에
+    // 닿지 못한 채로 표시가 남는다.
+    for (const type of ['wheel', 'touchstart', 'keydown'] as const) {
+      window.addEventListener(
+        type,
+        () => {
+          if (locked === null) return;
+          unlock();
+          schedule();
+        },
+        { passive: true },
+      );
+    }
+    window.addEventListener('resize', () => {
+      measure();
+      schedule();
+    });
+
+    /*
+     * 이동 중에 다른 필을 누른 경우.
+     *
+     * Chrome 은 부드러운 스크롤이 진행 중일 때 새 목표가 들어와도 목표를
+     * 갱신하지 않는다. 앵커 클릭이든 해시 변경이든 URL 만 바뀌고 화면은 원래
+     * 가던 곳으로 계속 간다 — 실측으로 주소창은 #venue 인데 화면은 #rules 에
+     * 멈추는 상태가 나왔다(데스크톱 3/6, 모바일 6/6).
+     *
+     * 재조준은 시작 방식에 따라 되기도 하고 안 되기도 해서 기대지 않는다.
+     * 대신 진행 중인 스크롤을 instant 로 한 번 세운 뒤 새로 시작한다.
+     * 그러면 어떤 조합에서도 마지막으로 누른 곳으로 간다.
+     */
+    for (const [id, link] of links) {
+      link.addEventListener('click', (event) => {
+        // 새 탭으로 열기 등 보조 조작은 브라우저에 맡긴다.
+        if (event.defaultPrevented || event.button !== 0) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+        const target = document.getElementById(id);
+        if (!target) return;
+        event.preventDefault();
+
+        // 0. 누른 필을 즉시 켜고 도달할 때까지 고정한다.
+        locked = id;
+        apply(id);
+        window.clearTimeout(unlockTimer);
+        // 목표에 끝내 닿지 못하는 경우(도중에 문서가 자라는 등)의 안전망.
+        unlockTimer = window.setTimeout(() => {
+          unlock();
+          schedule();
+        }, 1500);
+
+        // 1. 진행 중인 부드러운 스크롤을 현재 위치에서 세운다.
+        window.scrollTo({ top: window.scrollY, behavior: 'instant' });
+        // 2. URL 을 맞춘다. pushState 는 스크롤을 유발하지 않으므로
+        //    아래 이동과 겹치지 않는다. 뒤로 가기도 그대로 동작한다.
+        history.pushState(null, '', `#${id}`);
+        // 3. CSS 의 scroll-behavior 와 scroll-margin-top 을 그대로 쓴다.
+        target.scrollIntoView();
+      });
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -158,6 +295,7 @@ import { SECTIONS } from '../data/contest';
       {
         // sticky 높이만큼 위를 잘라내 화면에 실제로 보이는 영역으로 판정한다.
         // rootMargin 은 calc() 나 CSS 변수를 받지 않으므로 실제 높이를 재서 쓴다.
+        // 이 관측자는 '히어로 위에 있을 때' 판정을 위한 intersecting 집합만 유지한다.
         rootMargin: `-${navH}px 0px 0px 0px`,
         threshold: [0, 0.15, 0.3, 0.5, 0.75, 1],
       },
