@@ -41,17 +41,72 @@ import { LINKS, VENUE } from '../data/contest';
 
 const delays = staggerDelays(HERO_OBJECTS);
 
-const objects = HERO_OBJECTS.map((o, i) => ({
-  ...o,
-  style: [
-    ...Object.entries(objectVars(o)).map(([k, v]) => `${k}:${v}`),
-    `--ratio:${o.ratio}`,
-    `--tilt:${o.tilt}deg`,
-    `--spin:${o.spin}deg`,
-    `--d:${delays[i]}ms`,
-    `z-index:${o.z}`,
-  ].join(';'),
-}));
+/**
+ * 상시 모션(착지 이후에도 계속 움직이는 부분)의 파라미터를 여기서 만든다.
+ *
+ * 진입 애니메이션은 1.38초에 끝나고 그 뒤로 히어로는 완전히 정지한다.
+ * 방문자가 머무는 대부분의 시간이 정지 화면이므로 착지 후에 아주 얕은 모션을
+ * 남긴다. 진입과 충돌하지 않게 하는 방법은 아래 CSS 주석에 적었다.
+ *
+ * 난수를 쓰지 않는다. 위상은 이미 하드코딩된 spin 값에서 결정론적으로 뽑는다.
+ * 같은 입력이면 항상 같은 결과가 나오므로 새로고침해도 구도가 바뀌지 않는다.
+ */
+const KIND_RE = /\/assets\/([a-z]+)\//;
+
+/** 부유 대상 하한. 이보다 작은 잔알까지 무한 애니메이션을 걸면 레이어가 과해진다. */
+const FLOAT_MIN_SIZE = 4;
+/** size 4~16 을 0~1 로 정규화할 때 쓰는 폭. */
+const SIZE_SPAN = 12;
+
+const objects = HERO_OBJECTS.map((o, i) => {
+  const kind = KIND_RE.exec(o.src)?.[1] ?? 'obj';
+  // 진입이 끝나는 시각. 상시 모션은 반드시 이 뒤에 시작한다.
+  const landed = delays[i] + TIMING.objDur;
+  // 크기 정규화. 큰 것일수록 크게, 느리게 움직인다(원근).
+  const t = Math.min(1, Math.max(0, (o.size - FLOAT_MIN_SIZE) / SIZE_SPAN));
+
+  const float = o.size >= FLOAT_MIN_SIZE;
+  const floatAmp = +(0.4 + t * 0.8).toFixed(3); // cqh
+  const floatDur = +(4.2 + t * 2.8).toFixed(2); // s
+  // 서로 다른 시각에 시작해 흩어지게 한다. 97 은 spin 값들과 공약수가 없는 소수다.
+  const floatPhase = +(((Math.abs(o.spin) % 97) / 97) * floatDur).toFixed(2);
+
+  const twinkle = kind === 'sparkle';
+  const twinkleDur = +(2.4 + ((Math.abs(o.spin) % 17) / 17) * 1.7).toFixed(2);
+  const twinklePhase = +(((Math.abs(o.spin) % 53) / 53) * twinkleDur).toFixed(2);
+
+  return {
+    ...o,
+    kind,
+    float,
+    twinkle,
+    style: [
+      ...Object.entries(objectVars(o)).map(([k, v]) => `${k}:${v}`),
+      `--ratio:${o.ratio}`,
+      `--tilt:${o.tilt}deg`,
+      `--spin:${o.spin}deg`,
+      `--d:${delays[i]}ms`,
+      `z-index:${o.z}`,
+      ...(float
+        ? [
+            `--floatAmp:${floatAmp}`,
+            `--floatDur:${floatDur}s`,
+            `--floatDelay:${(landed / 1000 + floatPhase).toFixed(2)}s`,
+          ]
+        : []),
+      ...(twinkle
+        ? [
+            `--twinkleDur:${twinkleDur}s`,
+            `--twinkleDelay:${(landed / 1000 + twinklePhase).toFixed(2)}s`,
+          ]
+        : []),
+    ].join(';'),
+  };
+});
+
+/** 상시 모션이 실제로 붙은 개수 — 아래 주석의 근거이자 회귀 확인용이다. */
+const floatCount = objects.filter((o) => o.float).length;
+const twinkleCount = objects.filter((o) => o.twinkle).length;
 ---
 
 <section class="hero">
@@ -66,10 +121,18 @@ const objects = HERO_OBJECTS.map((o, i) => ({
       {
         objects.map((o) => (
           // 바깥 겹: 이동 + 축소. overshoot easing.
-          <div class="obj" style={o.style} data-anim>
+          // obj--float 는 착지 후 상시 부유하는 항목이다(큰 것만).
+          <div class:list={['obj', o.float && 'obj--float']} style={o.style} data-anim>
             {/* 안쪽 겹: 회전만. 바깥과 다른 easing 을 준다. */}
             <div class="obj__spin" data-anim>
-              <img src={o.src} alt="" loading="eager" decoding="async" />
+              {/* obj--twinkle 은 sparkle 전용. 이름 그대로 반짝이게 한다. */}
+              <img
+                class:list={[o.twinkle && 'twinkle']}
+                src={o.src}
+                alt=""
+                loading="eager"
+                decoding="async"
+              />
             </div>
           </div>
         ))
@@ -82,15 +145,26 @@ const objects = HERO_OBJECTS.map((o, i) => ({
   </div>
 
   <div class="title-block">
-    {/* 제목 — 두 줄이 서로 다른 타이밍에 등장한다.
-        스코프 스타일은 이 컴포넌트 템플릿의 요소에만 적용되므로, 자식 컴포넌트가
-        렌더하는 <svg> 를 직접 겨냥할 수 없다. 래퍼를 여기 두고 래퍼를 움직인다. */}
+    {/* 제목 — 줄이 아니라 글자(패스) 단위로 등장한다.
+        스코프 스타일은 자식 컴포넌트가 렌더하는 <path> 에 닿지 않으므로,
+        타이밍만 props 로 넘기고 애니메이션은 TitleLockup 이 자기 안에서 건다.
+        래퍼는 크기(--title-h)만 담당한다. */}
     <div class="title">
-      <div class="title__line title__line--swit text-gold">
-        <TitleLockup line="swit" />
+      <div class="title__line text-gold">
+        <TitleLockup
+          line="swit"
+          delay={TIMING.titleSwit}
+          dur={TIMING.titleDur}
+          stagger={TIMING.titleGlyphStagger}
+        />
       </div>
-      <div class="title__line title__line--contest text-orange-title">
-        <TitleLockup line="contest" />
+      <div class="title__line text-orange-title">
+        <TitleLockup
+          line="contest"
+          delay={TIMING.titleContest}
+          dur={TIMING.titleDur}
+          stagger={TIMING.titleGlyphStagger}
+        />
       </div>
     </div>
 
@@ -133,10 +207,10 @@ const objects = HERO_OBJECTS.map((o, i) => ({
     oy: `${ORIGIN.yPct}`,
     figH: `${FIGURE.heightPct}`,
     figRatio: `${FIGURE.ratio}`,
+    figStart: `${TIMING.figStart}ms`,
+    figDur: `${TIMING.figDur}ms`,
     objDur: `${TIMING.objDur}ms`,
-    titleDur: `${TIMING.titleDur}ms`,
-    titleSwitDelay: `${TIMING.titleSwit}ms`,
-    titleContestDelay: `${TIMING.titleContest}ms`,
+    landDur: `${TIMING.landDur}ms`,
   }}
 >
   /* 컴포넌트 스코프 스타일은 별도 CSS 엔트리다. 디자인 토큰을 theme() 으로
@@ -230,8 +304,39 @@ const objects = HERO_OBJECTS.map((o, i) => ({
   }
 
   /* 안쪽 겹 — 회전만 담당한다. 바깥과 다른 easing 이라 궤적이 휘어 보인다. */
+  /*
+   * A2 — 착지 후 상시 부유.
+   *
+   * transform 이 아니라 개별 translate 속성을 쓴다. .obj 의 transform 은 진입
+   * (obj-fly)이 이미 점유하고 있고 최종 상태가 transform: none 이어야 한다.
+   * translate 는 transform 과 따로 합성되므로 겹을 늘리지 않고 위에 얹힌다.
+   * (img 의 tilt 를 rotate 로 준 것과 같은 수법이다.)
+   *
+   * 4% 미만 잔알에는 걸지 않는다. 무한 애니메이션은 animationend 가 오지
+   * 않아 합성 레이어를 계속 물고 있으므로 대상을 큰 것으로 제한한다.
+   *
+   * 시작 시각은 항목별 착지 시각 + 위상이다. keyframe 이 0 에서 시작해 0 으로
+   * 끝나므로 진입이 끝난 자리에서 튀지 않고 이어진다.
+   */
+  .obj--float {
+    animation:
+      obj-fly var(--objDur) cubic-bezier(0.22, 1.35, 0.36, 1) var(--d) both,
+      obj-float var(--floatDur) ease-in-out var(--floatDelay) infinite;
+  }
+
+  /*
+   * 안쪽 겹 — 회전(진입) + 착지 임팩트.
+   *
+   * B4: 도착 직전에 짧게 부풀었다 가라앉는다. overshoot easing 이 이미 위치에
+   * 탄성을 주고 있으므로 여기서는 크기만 아주 얕게 얹는다.
+   * transform 은 obj-spin 이 쓰고 있으므로 개별 scale 속성을 쓴다.
+   * 시작 시각은 자기 비행이 끝나기 landDur*0.7 전이다.
+   */
   .obj__spin {
-    animation: obj-spin var(--objDur) cubic-bezier(0.33, 0, 0.2, 1) var(--d) both;
+    animation:
+      obj-spin var(--objDur) cubic-bezier(0.33, 0, 0.2, 1) var(--d) both,
+      obj-land var(--landDur) cubic-bezier(0.3, 0, 0.2, 1)
+        calc(var(--d) + var(--objDur) - var(--landDur) * 0.7) both;
     will-change: transform;
   }
 
@@ -253,6 +358,19 @@ const objects = HERO_OBJECTS.map((o, i) => ({
     rotate: var(--tilt, 0deg);
   }
 
+  /*
+   * A1 — sparkle 반짝임. 에셋 이름이 sparkle 인데 반짝이지 않았다.
+   *
+   * opacity 는 .obj 의 obj-fly 가 진입 동안 0 -> 1 로 쓰고 있다. 여기서 또
+   * 건드리면 겹치므로 부모가 아니라 img 에 건다. 부모 opacity 와 곱해지고,
+   * 시작 시각이 착지 이후라 진입 구간과 겹치지도 않는다.
+   *
+   * 23개뿐이고 opacity 만 바뀌므로 레이아웃도 페인트도 발생하지 않는다.
+   */
+  .obj img.twinkle {
+    animation: twinkle var(--twinkleDur) ease-in-out var(--twinkleDelay) infinite;
+  }
+
   /* figure_1 — 좌하단. 머리 위쪽이 버스트 원점이다. */
   .figure {
     position: absolute;
@@ -261,6 +379,24 @@ const objects = HERO_OBJECTS.map((o, i) => ({
     height: calc(var(--figH) * 1cqh);
     width: auto;
     display: block;
+    /*
+     * A4 — 실루엣 호흡. 광선을 뿜는 주체가 정지해 있으면 어색하다.
+     *
+     * 기준점을 발밑에 둔다. 기본값(중앙)으로 확대하면 바닥에서 떠오른다.
+     * transform 이 아니라 scale 속성이라 위치 계산(left/bottom)과 무관하다.
+     * 진입 애니메이션이 없는 요소이므로 지연 없이 바로 시작해도 된다.
+     */
+    transform-origin: bottom center;
+    /*
+     * B1 — 등장. 지금까지 실루엣만 애니메이션이 없어서 처음부터 그냥 서 있었다.
+     * 광선(180ms)보다 먼저 서야 "이 사람이 뿜고 있다" 로 읽힌다.
+     *
+     * 등장은 translate + opacity, 호흡은 scale 로 속성을 나눴다. 서로 다른
+     * 속성이라 겹쳐도 충돌하지 않지만, 호흡은 등장이 끝난 뒤 시작하게 뒀다.
+     */
+    animation:
+      figure-in var(--figDur) cubic-bezier(0.2, 0.9, 0.3, 1) var(--figStart) both,
+      figure-breathe 6.4s ease-in-out calc(var(--figStart) + var(--figDur)) infinite;
   }
 
   @keyframes obj-fly {
@@ -283,6 +419,59 @@ const objects = HERO_OBJECTS.map((o, i) => ({
     }
     to {
       transform: none;
+    }
+  }
+
+  /* 1 에서 시작해 1 로 끝난다. 중간에만 부푼다. */
+  @keyframes obj-land {
+    0%,
+    100% {
+      scale: 1;
+    }
+    45% {
+      scale: 1.07;
+    }
+  }
+
+  /* 0 에서 시작해 0 으로 끝난다. 어느 시점에 시작해도 착지 위치에서 튀지 않는다. */
+  @keyframes obj-float {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 calc(var(--floatAmp) * -1cqh);
+    }
+  }
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes figure-in {
+    from {
+      translate: 0 22%;
+      opacity: 0;
+    }
+    to {
+      translate: 0 0;
+      opacity: 1;
+    }
+  }
+
+  @keyframes figure-breathe {
+    0%,
+    100% {
+      scale: 1;
+    }
+    50% {
+      scale: 1.008;
     }
   }
 
@@ -317,27 +506,6 @@ const objects = HERO_OBJECTS.map((o, i) => ({
     display: block;
     height: 100%;
     width: auto;
-  }
-
-  .title__line--swit {
-    animation: title-in var(--titleDur) cubic-bezier(0.2, 0.9, 0.3, 1) var(--titleSwitDelay) both;
-    will-change: transform, opacity;
-  }
-
-  .title__line--contest {
-    animation: title-in var(--titleDur) cubic-bezier(0.2, 0.9, 0.3, 1) var(--titleContestDelay) both;
-    will-change: transform, opacity;
-  }
-
-  @keyframes title-in {
-    from {
-      transform: translateY(16%) scale(0.94);
-      opacity: 0;
-    }
-    to {
-      transform: none;
-      opacity: 1;
-    }
   }
 
   .facts {
@@ -411,23 +579,32 @@ const objects = HERO_OBJECTS.map((o, i) => ({
     background-color: theme(colors.orange-title);
   }
 
-  /* 애니메이션 없이 최종 상태를 즉시 렌더한다. */
+  /*
+   * 애니메이션 없이 최종 상태를 즉시 렌더한다.
+   * 진입뿐 아니라 상시 모션(부유·반짝임·호흡)도 예외 없이 끈다. 계속 움직이는
+   * 화면은 reduced-motion 사용자에게 진입 애니메이션보다 해롭다.
+   */
   @media (prefers-reduced-motion: reduce) {
     .obj,
+    .obj--float,
     .obj__spin,
-    .title__line--swit,
-    .title__line--contest {
+    .obj img.twinkle,
+    .figure {
       animation: none;
       will-change: auto;
     }
   }
 
-  /* 뷰포트 640px 이하 — 애니메이션을 생략하고 최종 상태만 보여준다. */
+  /*
+   * 뷰포트 640px 이하 — 애니메이션을 생략하고 최종 상태만 보여준다.
+   * 상시 모션도 함께 끈다. 배터리를 계속 쓰는 것을 피한다.
+   */
   @media (max-width: 640px) {
     .obj,
+    .obj--float,
     .obj__spin,
-    .title__line--swit,
-    .title__line--contest {
+    .obj img.twinkle,
+    .figure {
       animation: none;
       will-change: auto;
     }

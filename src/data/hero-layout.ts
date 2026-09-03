@@ -43,24 +43,59 @@ export const FIGURE = {
     heightPct: 32,
 } as const;
 
-/** 애니메이션 타임라인 (ms). 총 진행 시간은 1.4초 이내로 유지한다. */
+/**
+ * 애니메이션 타임라인 (ms). 총 진행 시간은 1.4초 이내로 유지한다.
+ *
+ * 순서에 인과를 준다 — 실루엣이 먼저 서고, 그 머리에서 광선이 뻗고,
+ * 광선을 따라 오브젝트가 날아간 뒤 제목이 뜬다.
+ *
+ *     0ms  실루엣이 솟아오른다
+ *   180ms  광선이 뻗기 시작 (오브젝트보다 먼저)
+ *   200ms  오브젝트가 원점에서 출발. 560ms 에 걸쳐 순차 발사
+ *   800ms  SW-IT 글자별 등장
+ *   930ms  CONTEST 글자별 등장
+ *  1380ms  종료
+ */
 export const TIMING = {
-    rayStart: 0,
+    /** 실루엣 등장. 광선보다 먼저 끝나야 "뿜는 주체" 로 읽힌다. */
+    figStart: 0,
+    figDur: 320,
+
+    /**
+     * 광선 시작. Rays.astro 가 쐐기별 delay 에 이 값을 더한다.
+     * (예전에는 이 상수가 정의만 되고 쓰이지 않아 항상 0ms 에 시작했다.)
+     */
+    rayStart: 180,
     rayDur: 380,
     rayStagger: 90,
-    objStart: 360,
-    objStagger: 360,
+
+    /**
+     * 오브젝트. objStagger 를 360 -> 560 으로 넓혔다.
+     * 50개가 360ms 에 몰리면 항목당 7.2ms 라 사실상 동시에 나타난다.
+     * 560ms 면 11.2ms 로 벌어져 "뿜어져 나오는" 순차감이 보인다.
+     */
+    objStart: 200,
+    objStagger: 560,
     objDur: 620,
-    titleSwit: 860,
-    titleContest: 1000,
-    titleDur: 380,
+    /** 착지 임팩트. 도착 직전에 짧게 눌렀다 펴진다. */
+    landDur: 200,
+
+    /** 제목. 줄 단위가 아니라 글자(패스) 단위로 순차 등장한다. */
+    titleSwit: 800,
+    titleContest: 930,
+    titleDur: 300,
+    titleGlyphStagger: 24,
 } as const;
+
+/** 제목 줄별 글리프 수. TitleLockup.astro 의 <path> 개수와 같아야 한다. */
+export const TITLE_GLYPHS = { swit: 5, contest: 7 } as const;
 
 /** 마지막 애니메이션이 끝나는 시점(ms). 1400 을 넘으면 안 된다. */
 export const TIMELINE_END = Math.max(
+    TIMING.figStart + TIMING.figDur,
     TIMING.rayStart + TIMING.rayStagger + TIMING.rayDur,
     TIMING.objStart + TIMING.objStagger + TIMING.objDur,
-    TIMING.titleContest + TIMING.titleDur,
+    TIMING.titleContest + (TITLE_GLYPHS.contest - 1) * TIMING.titleGlyphStagger + TIMING.titleDur,
 );
 
 export interface HeroObject {

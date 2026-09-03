@@ -53,14 +53,38 @@ const WEDGES: readonly Wedge[] = [
   { angle: 74.0, lenD: 0.176, halfD: 0.0037, tone: 'orange', delay: 68 },
 ];
 
-const wedgeStyle = (w: Wedge) =>
-  [
+/** 쐐기 중 가장 두꺼운 것의 halfD. 호흡 주기를 굵기에 비례시키는 기준이다. */
+const MAX_HALF = Math.max(...WEDGES.map((w) => w.halfD));
+
+/**
+ * 뻗기가 끝난 뒤의 상시 호흡 파라미터.
+ *
+ * 굵은 쐐기는 느리게, 얇은 쐐기는 빠르게 숨쉰다. 전부 같은 주기로 흔들면
+ * 레이어 전체가 한 덩어리로 깜빡여서 빛이 아니라 화면 밝기 변화로 읽힌다.
+ * 위상도 각도에서 결정론적으로 뽑아 흩어 놓는다. 난수를 쓰지 않는다.
+ */
+const breathe = (w: Wedge) => {
+  const dur = +(5.0 + (w.halfD / MAX_HALF) * 3.0).toFixed(2);
+  const phase = +(((Math.round(Math.abs(w.angle) * 10) * 7) % 31) / 31) * dur;
+  // 자기 쐐기의 뻗기가 끝난 뒤부터 숨쉰다.
+  const grown = (TIMING.rayStart + w.delay + TIMING.rayDur) / 1000;
+  return { dur, delay: +(grown + phase).toFixed(2) };
+};
+
+const wedgeStyle = (w: Wedge) => {
+  const b = breathe(w);
+  return [
     `--lenD:${w.lenD}`,
     `--halfD:${w.halfD}`,
     // 화면 y 는 아래로 증가한다. 우상향이므로 부호를 뒤집는다.
     `--rot:${(-w.angle).toFixed(2)}deg`,
-    `--d:${w.delay}ms`,
+    // 쐐기별 지연에 레이어 공통 시작 시각을 더한다. 실루엣이 먼저 서고
+    // 그 다음에 광선이 뻗어야 인과가 읽힌다.
+    `--d:${TIMING.rayStart + w.delay}ms`,
+    `--breatheDur:${b.dur}s`,
+    `--breatheDelay:${b.delay}s`,
   ].join(';');
+};
 ---
 
 {/* 광선 — transform-origin 을 원점에 두고 scaleX 로 뻗는다. 오브젝트보다 먼저다. */}
@@ -120,7 +144,18 @@ const wedgeStyle = (w: Wedge) =>
     /* 원점에서 한 점으로 모이는 쐐기 */
     clip-path: polygon(0 50%, 100% 0, 100% 100%);
     transform-origin: 0 50%;
-    animation: ray-grow var(--rayDur) cubic-bezier(0.16, 0.84, 0.3, 1) var(--d) both;
+    /*
+     * A3 — 뻗기(ray-grow) 뒤에 상시 호흡(ray-breathe)을 잇는다.
+     *
+     * 둘 다 opacity 를 쓰지만 구간이 겹치지 않는다. ray-breathe 의 지연이
+     * ray-grow 의 종료(지연 + rayDur) 이후이고, 지연 중에는 fill 이 없어
+     * 아무것도 기여하지 않는다. 겹치더라도 목록 뒤쪽이 우선하므로 안전하다.
+     *
+     * 각도·굵기·길이·색은 건드리지 않는다. 밝기만 얕게 흔든다.
+     */
+    animation:
+      ray-grow var(--rayDur) cubic-bezier(0.16, 0.84, 0.3, 1) var(--d) both,
+      ray-breathe var(--breatheDur) ease-in-out var(--breatheDelay) infinite;
     will-change: transform, opacity;
   }
 
@@ -144,7 +179,19 @@ const wedgeStyle = (w: Wedge) =>
     }
   }
 
-  /* 애니메이션 없이 최종 상태를 즉시 렌더한다. */
+  /* 1 에서 시작해 1 로 끝난다. 뻗기가 끝난 밝기에서 튀지 않고 이어진다. */
+  @keyframes ray-breathe {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+
+  /* 애니메이션 없이 최종 상태를 즉시 렌더한다.
+     animation 을 통째로 none 으로 덮으므로 상시 호흡도 함께 꺼진다. */
   @media (prefers-reduced-motion: reduce) {
     .ray__beam {
       animation: none;
@@ -152,7 +199,7 @@ const wedgeStyle = (w: Wedge) =>
     }
   }
 
-  /* 뷰포트 640px 이하 — 애니메이션을 생략한다. */
+  /* 뷰포트 640px 이하 — 애니메이션을 생략한다. 상시 호흡도 함께 꺼진다. */
   @media (max-width: 640px) {
     .ray__beam {
       animation: none;
