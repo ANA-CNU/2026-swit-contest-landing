@@ -117,7 +117,7 @@ export const PRIZES = [
 ] as const;
 
 export const PRIZE_NOTE =
-    "수상 팀에는 상금과 함께 '충남대학교데이터보안활용 혁신융합대학사업단장상' 을 수여한다.";
+    "* 수상 팀은 '충남대학교데이터보안활용 혁신융합대학사업단장상' 을 수여";
 
 /** 주최. */
 export const HOST = "충남대학교 컴퓨터인공지능학부 알고리즘 동아리 ANA";
