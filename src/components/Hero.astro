@@ -24,8 +24,12 @@
  *     애니메이션이 아니라 img 의 rotate 로 정적으로 준다.
  *
  * 레이어 순서
- *   광선 -> 오브젝트 -> 실루엣. 광선이 항상 최후방이고 어떤 오브젝트도 그
- *   아래로 갈 수 없다. .layer--objects 의 isolation: isolate 가 보장한다.
+ *   stage 내부 순서는 광선 -> 오브젝트 -> 실루엣이다. stage 전체는 z-index: 0 인
+ *   배경 쌓임 문맥이고, title-block 전체는 z-index: 1 인 투명 전경 쌓임 문맥이다.
+ *   stage 자식은 stage 하단을 넘어 제목 뒤까지 렌더링될 수 있지만, hero 의
+ *   overflow: hidden 이 장식이 Hero 바깥으로 나가는 것을 최종 차단한다. 개별
+ *   HeroObject.z 는 stage 의 object 레이어 안에서 오브젝트끼리의 순서만 정한다.
+ *   .layer--objects 의 isolation: isolate 가 이 계약을 보장한다.
  */
 import Rays from './Rays.astro';
 import TitleLockup from './TitleLockup.astro';
@@ -217,8 +221,11 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
      쓰려면 설정을 들고 있는 global.css 를 참조로 걸어야 한다. */
   @reference '../styles/global.css';
 
-  /* 히어로 전체가 첫 화면에 들어온다. dvh 는 모바일 브라우저 툴바 변동을 흡수한다. */
+  /* 히어로 전체가 첫 화면에 들어온다. dvh 는 모바일 브라우저 툴바 변동을 흡수한다.
+     stage 장식은 제목 블록 뒤까지 이어지되, 이 쌓임 문맥 밖으로는 나가지 않는다. */
   .hero {
+    position: relative;
+    isolation: isolate;
     display: grid;
     /* 제목 블록이 내용 높이를 먼저 확보하고 분사 영역이 남은 만큼 차지한다.
        고정 비율(예: 65%/35%)로 두면 소개 문장이 늘어난 뷰포트에서 CTA 가 잘린다.
@@ -231,11 +238,14 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
   }
 
   /* 분사 영역. container-type: size 로 자손의 cqw/cqh 가 이 크기를 가리킨다.
-     고정 aspect-ratio 를 쓰지 않으므로 좌표 기준은 런타임 실제 크기다. */
+     고정 aspect-ratio 를 쓰지 않으므로 좌표 기준은 런타임 실제 크기다.
+     장식 레이어는 제목 블록 뒤까지 넘길 수 있고, 포인터 이벤트를 가로채지 않는다. */
   .stage {
     position: relative;
     container-type: size;
-    overflow: hidden;
+    z-index: 0;
+    overflow: visible;
+    pointer-events: none;
   }
 
   .layer {
@@ -250,9 +260,11 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
   }
 
   /*
-   * 레이어 순서는 광선 -> 오브젝트 -> 실루엣으로 고정이다.
+   * 레이어 순서는 광선 -> 오브젝트 -> 실루엣으로 고정이다. stage 는 z-index: 0 인
+   * 배경 쌓임 문맥, title-block 은 z-index: 1 인 투명 전경 쌓임 문맥이며, hero 의
+   * overflow: hidden 이 stage 자식이 제목 뒤로 넘치는 장식을 Hero 바깥에서 막는다.
    *
-   * 0, 1, 2 는 레이어 사이의 순서만 정한다. 개별 오브젝트의 z(1~50)와는
+   * 0, 1, 2 는 stage 내부 레이어 사이의 순서만 정한다. 개별 오브젝트의 z(1~50)와는
    * 다른 축이며 섞이지 않는다 — .layer--objects 가 쌓임 문맥을 만들기 때문에
    * 오브젝트의 z 는 그 안에서만 비교된다.
    *
@@ -263,10 +275,6 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
    */
   .layer--rays {
     z-index: 0;
-    /* 스테이지 하단은 제목 블록과 맞닿는다. 광선이 그 변에 걸리면 직선으로 잘려
-       이음선이 보이므로, 종횡비가 달라져도 안전하게 아래쪽을 부드럽게 지운다.
-       오브젝트와 figure 는 마스크하지 않는다. */
-    mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
   }
 
   .layer--objects {
@@ -478,6 +486,9 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
   /* ── 제목 블록 ─────────────────────────────────────── */
 
   .title-block {
+    /* stage 장식 위에서 읽히는 내용 레이어. 배경을 덧칠하지 않고 순서만 올린다. */
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
