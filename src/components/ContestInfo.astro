@@ -10,7 +10,7 @@
  *   상금   금액 내림차순이 크기로 드러나는 표. 대상만 gold
  *
  * 배경은 전부 흰색이다. 섹션마다 배경색을 바꾸지 않는다.
- * 섹션 진입 애니메이션은 없다 — 히어로의 분사가 페이지의 유일한 모션이다.
+ * 각 정보 섹션은 Motion JS가 한 번만 아래에서 드러내며, 기본 HTML은 항상 보인다.
  */
 import VenueMap from './VenueMap.astro';
 import {
@@ -27,7 +27,7 @@ import {
 
 <div class="info">
   {/* ── 1. 대회 일정 ───────────────────────────────── */}
-  <section id="schedule" class="section">
+  <section id="schedule" class="section" data-scroll-reveal>
     <h2 class="heading">
       <img class="heading__icon" src={SECTION_ICON.schedule} alt="" aria-hidden="true" />
       대회 일정
@@ -48,7 +48,7 @@ import {
   </section>
 
   {/* ── 2. 대회 장소 — 카드 없이 한 줄 ──────────────── */}
-  <section id="venue" class="section">
+  <section id="venue" class="section" data-scroll-reveal>
     <h2 class="heading">
       <img class="heading__icon" src={SECTION_ICON.venue} alt="" aria-hidden="true" />
       대회 장소
@@ -59,7 +59,7 @@ import {
   </section>
 
   {/* ── 3. 참가 대상 ───────────────────────────────── */}
-  <section id="eligibility" class="section">
+  <section id="eligibility" class="section" data-scroll-reveal>
     <h2 class="heading">
       <img class="heading__icon" src={SECTION_ICON.eligibility} alt="" aria-hidden="true" />
       참가 대상
@@ -70,7 +70,7 @@ import {
   </section>
 
   {/* ── 4. 대회 규칙 — 허용 / 금지 구분 ─────────────── */}
-  <section id="rules" class="section">
+  <section id="rules" class="section" data-scroll-reveal>
     <h2 class="heading">
       <img class="heading__icon" src={SECTION_ICON.rules} alt="" aria-hidden="true" />
       대회 규칙
@@ -103,7 +103,7 @@ import {
   </section>
 
   {/* ── 5. 대회 상금 ───────────────────────────────── */}
-  <section id="prizes" class="section">
+  <section id="prizes" class="section" data-scroll-reveal>
     <h2 class="heading">
       <img class="heading__icon" src={SECTION_ICON.prizes} alt="" aria-hidden="true" />
       대회 상금
@@ -128,7 +128,7 @@ import {
   </section>
 
   {/* ── 6. 참가 신청 ───────────────────────────────── */}
-  <section id="apply" class="section section--apply">
+  <section id="apply" class="section section--apply" data-scroll-reveal>
     <h2 class="heading heading--plain">참가 신청</h2>
     <a class="apply-cta" href="https://forms.gle/uPfh6FU3BDJEsYd8A">구글폼으로 신청하기</a>
   </section>

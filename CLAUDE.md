@@ -18,8 +18,9 @@ DB, 인증, 폼 처리, 서버 로직은 없다.
 
 - **Astro** — 정적 출력. SSR 어댑터를 추가하지 않는다.
 - **Tailwind CSS** — 아래 디자인 토큰을 `tailwind.config`에 등록해 사용한다.
-- 상태 관리 라이브러리, UI 프레임워크, 애니메이션 라이브러리를 추가하지 않는다.
-  애니메이션은 CSS와 최소한의 vanilla JS로 구현한다.
+- 상태 관리 라이브러리, UI 프레임워크, React, React용 애니메이션 라이브러리는 추가하지 않는다.
+  애니메이션은 CSS와 최소한의 vanilla JS로 구현한다. 단, 본문 섹션의 스크롤 reveal에는
+  공식 `motion` 패키지를 예외로 허용하며 `motion/mini`의 `animate`와 `motion`의 `inView`만 쓴다.
 - 이미지 최적화는 Astro의 `<Image>` 또는 빌드 스크립트로 처리한다.
 
 ## 디자인 토큰
@@ -351,6 +352,14 @@ PUBLIC_KAKAO_MAP_KEY   카카오 개발자 콘솔의 JavaScript 앱 키
 - 애니메이션에 난수를 쓰지 않는다.
 - 다크 테마와 백엔드를 추가하지 않는다.
 - 외부 API 는 카카오맵 하나만 쓴다. 그 밖의 연동을 추가하지 않는다.
-- JS 는 세 곳에만 쓴다 — 히어로 애니메이션, 섹션 네비게이션의 스크롤 위치 표시,
-  카카오맵 로딩. 그 밖의 동작을 JS 로 붙이지 않는다.
-- 애니메이션 라이브러리를 설치하지 않는다.
+- JS 는 네 곳에만 쓴다 — 히어로 애니메이션, 섹션 네비게이션의 스크롤 위치 표시,
+  카카오맵 로딩, `src/scripts/scroll-reveal.ts`의 본문 reveal. 그 밖의 동작을 JS 로 붙이지 않는다.
+- 본문 reveal은 `#schedule`, `#venue`, `#eligibility`, `#rules`, `#prizes`, `#apply`에만
+  `data-scroll-reveal`을 붙인다. Hero, stage, 제목, SectionNav, 네비게이션 필, 개별 행·지도,
+  개별 로고, footer에는 붙이지 않는다.
+- reveal 상수는 데스크톱 28px, 모바일 16px, 0.64초, `[0.16, 1, 0.3, 1]`, amount 0.15,
+  margin `0px 0px -30% 0px`으로 고정한다. opacity와 완전한 `translateY()` 문자열만 애니메이션한다.
+- `prefers-reduced-motion: reduce`에서는 reveal을 초기화하지 않고 콘텐츠를 그대로 보인다.
+  실행 중 reduce로 바뀌면 관측과 활성 애니메이션을 멈추고 모든 reveal 인라인 스타일을 지운다.
+  초기화 또는 애니메이션 실패도 같은 fail-open 처리로 즉시 보이게 한다.
+- 위의 본문 reveal 예외 외에는 애니메이션 라이브러리를 설치하지 않는다.
