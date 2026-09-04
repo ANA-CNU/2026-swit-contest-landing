@@ -246,6 +246,10 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
     z-index: 0;
     overflow: visible;
     pointer-events: none;
+    /* 스크롤 보정의 기본값. 오브젝트 자체의 transform 애니메이션과 분리하려고
+       stage 에 개별 translate 를 쓴다. */
+    --stage-parallax-y: 0px;
+    translate: 0 var(--stage-parallax-y);
   }
 
   .layer {
@@ -596,6 +600,11 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
    * 화면은 reduced-motion 사용자에게 진입 애니메이션보다 해롭다.
    */
   @media (prefers-reduced-motion: reduce) {
+    .stage {
+      translate: none;
+      will-change: auto;
+    }
+
     .obj,
     .obj--float,
     .obj__spin,
@@ -611,6 +620,11 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
    * 상시 모션도 함께 끈다. 배터리를 계속 쓰는 것을 피한다.
    */
   @media (max-width: 640px) {
+    .stage {
+      translate: none;
+      will-change: auto;
+    }
+
     .obj,
     .obj--float,
     .obj__spin,
@@ -633,5 +647,96 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
       },
       { once: true },
     );
+  }
+
+  /*
+   * 데스크톱 히어로 패럴랙스.
+   *
+   * 스테이지는 화면을 밀어 내는 sticky/fixed 레이어가 아니다. Hero 가 위로
+   * 지나간 거리만 20% 따라가며, 최대 144px 에서 멈춘다. 즉 계산식은
+   *   scrolled = clamp(-heroRect.top, 0, heroRect.height)
+   *   offset   = min(scrolled * 0.2, 144)
+   * 이다. stage 의 개별 translate 에만 써서 자식의 기존 transform 애니메이션과
+   * 합성 충돌하지 않는다.
+   *
+   * 모바일은 그림을 숨기지 않고 정지 상태로 남긴다. reduced-motion 도 같은
+   * 초기 상태로 되돌린다. 스크롤 이벤트는 passive 로 받고 rAF 한 장에 한 번만
+   * 읽고 쓰며, Hero 가 화면에 걸렸고 데스크톱 모션 허용 조건일 때만 계산한다.
+   */
+  const PARALLAX_RESISTANCE = 0.2;
+  const PARALLAX_MAX_PX = 144;
+  const parallaxMedia = window.matchMedia(
+    '(min-width: 641px) and (prefers-reduced-motion: no-preference)',
+  );
+  const hero = document.querySelector<HTMLElement>('.hero');
+  const stage = hero?.querySelector<HTMLElement>('.stage');
+
+  if (hero && stage) {
+    let heroVisible = false;
+    let queued = false;
+    let frame = 0;
+    let previousY = 0;
+
+    // 0.1px 미만은 합성 결과가 보이지 않으므로 CSS 변수와 스타일 계산을 건드리지 않는다.
+    const writeOffset = (nextY: number) => {
+      if (Math.abs(nextY - previousY) < 0.1) return;
+      previousY = nextY;
+      stage.style.setProperty('--stage-parallax-y', `${nextY.toFixed(2)}px`);
+    };
+
+    // 조건이 하나라도 풀리면 즉시 정지 상태와 기본 합성 힌트로 돌린다.
+    const reset = () => {
+      if (frame !== 0) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+      queued = false;
+      writeOffset(0);
+      stage.style.willChange = 'auto';
+    };
+
+    const paint = () => {
+      queued = false;
+      frame = 0;
+
+      if (!parallaxMedia.matches) {
+        reset();
+        return;
+      }
+
+      if (!heroVisible) {
+        stage.style.willChange = 'auto';
+        return;
+      }
+
+      const heroRect = hero.getBoundingClientRect();
+      const scrolled = Math.min(Math.max(-heroRect.top, 0), heroRect.height);
+      const offset = Math.min(scrolled * PARALLAX_RESISTANCE, PARALLAX_MAX_PX);
+
+      // 실제로 움직이는 동안에만 합성 레이어를 요청한다.
+      stage.style.willChange = 'translate';
+      writeOffset(offset);
+    };
+
+    const schedule = () => {
+      if (queued || !heroVisible || !parallaxMedia.matches) return;
+      queued = true;
+      frame = requestAnimationFrame(paint);
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      heroVisible = entries[0]?.isIntersecting ?? false;
+      if (!parallaxMedia.matches) reset();
+      else if (heroVisible) schedule();
+      else stage.style.willChange = 'auto';
+    });
+    observer.observe(hero);
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    parallaxMedia.addEventListener('change', () => {
+      if (parallaxMedia.matches && heroVisible) schedule();
+      else reset();
+    });
   }
 </script>
