@@ -190,17 +190,19 @@ const wedgeStyle = (w: Wedge) => {
     }
   }
 
-  /* 애니메이션 없이 최종 상태를 즉시 렌더한다.
-     animation 을 통째로 none 으로 덮으므로 상시 호흡도 함께 꺼진다. */
-  @media (prefers-reduced-motion: reduce) {
+  /* 뷰포트 640px 이하 — 뻗기는 살리고 상시 호흡만 끈다.
+     (이유는 Hero.astro 의 같은 미디어쿼리 주석 참조.)
+     animation-name 을 하나로 줄이면 첫 값들만 남아 ray-grow 만 돈다. */
+  @media (max-width: 640px) {
     .ray__beam {
-      animation: none;
-      will-change: auto;
+      animation-name: ray-grow;
     }
   }
 
-  /* 뷰포트 640px 이하 — 애니메이션을 생략한다. 상시 호흡도 함께 꺼진다. */
-  @media (max-width: 640px) {
+  /* 애니메이션 없이 최종 상태를 즉시 렌더한다.
+     animation 을 통째로 none 으로 덮으므로 상시 호흡도 함께 꺼진다.
+     640px 분기보다 뒤에 와야 한다 — 특이도가 같아 순서로 승부가 갈린다. */
+  @media (prefers-reduced-motion: reduce) {
     .ray__beam {
       animation: none;
       will-change: auto;

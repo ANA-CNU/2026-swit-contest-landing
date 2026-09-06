@@ -595,31 +595,51 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
   }
 
   /*
-   * 애니메이션 없이 최종 상태를 즉시 렌더한다.
-   * 진입뿐 아니라 상시 모션(부유·반짝임·호흡)도 예외 없이 끈다. 계속 움직이는
-   * 화면은 reduced-motion 사용자에게 진입 애니메이션보다 해롭다.
+   * 뷰포트 640px 이하 — 진입은 살리고 계속 도는 모션만 끈다.
+   *
+   * 이 사이트는 카톡·인스타 공유로 들어온다. 방문자 대다수가 모바일인데
+   * 진입 애니메이션까지 끄면 사이트의 주된 볼거리를 대다수가 못 본다.
+   * 진입은 1.38초에 끝나는 일회성이고 transform/opacity 만 쓴다.
+   *
+   * 끄는 것은 두 가지다.
+   *   - 무한히 도는 상시 모션(부유·반짝임·호흡): 배터리를 계속 쓰고
+   *     합성 레이어를 영구히 물고 있다.
+   *   - 스테이지 패럴랙스: 스크롤에 붙어 매 프레임 도는 효과라 플링이 잦은
+   *     모바일에서 값이 다르다.
+   *
+   * animation-name 을 하나로 줄이면 duration/easing/delay 목록도 첫 값만
+   * 쓰인다(목록 길이가 name 개수에 맞춰 잘린다). 그래서 타이밍을 다시 적지
+   * 않아도 진입만 남는다. 단, 위 animation 선언에서 진입이 항상 첫 번째여야 한다.
    */
-  @media (prefers-reduced-motion: reduce) {
+  @media (max-width: 640px) {
     .stage {
       translate: none;
       will-change: auto;
     }
 
-    .obj,
-    .obj--float,
-    .obj__spin,
-    .obj img.twinkle,
+    .obj--float {
+      animation-name: obj-fly;
+    }
+
     .figure {
+      animation-name: figure-in;
+    }
+
+    .obj img.twinkle {
       animation: none;
-      will-change: auto;
     }
   }
 
   /*
-   * 뷰포트 640px 이하 — 애니메이션을 생략하고 최종 상태만 보여준다.
-   * 상시 모션도 함께 끈다. 배터리를 계속 쓰는 것을 피한다.
+   * 애니메이션 없이 최종 상태를 즉시 렌더한다.
+   * 진입뿐 아니라 상시 모션(부유·반짝임·호흡)도 예외 없이 끈다. 계속 움직이는
+   * 화면은 reduced-motion 사용자에게 진입 애니메이션보다 해롭다.
+   *
+   * 이 블록은 반드시 640px 분기보다 뒤에 온다. 둘은 특이도가 같아 순서로
+   * 승부가 갈리는데, 앞에 두면 좁은 화면에서 640px 분기가 이 규칙을 덮어
+   * reduced-motion 을 켠 사용자에게 애니메이션이 나가 버린다.
    */
-  @media (max-width: 640px) {
+  @media (prefers-reduced-motion: reduce) {
     .stage {
       translate: none;
       will-change: auto;

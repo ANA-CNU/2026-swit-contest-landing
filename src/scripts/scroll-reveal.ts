@@ -8,8 +8,24 @@ const DESKTOP_OFFSET_PX = 28;
 const MOBILE_OFFSET_PX = 16;
 const REVEAL_DURATION = 0.64;
 const REVEAL_EASE = [0.16, 1, 0.3, 1] as const;
-const VIEW_AMOUNT = 0.15;
-const VIEW_MARGIN = '0px 0px -30% 0px';
+/*
+ * reveal 판정 범위.
+ *
+ * margin 은 화면 아래쪽을 잘라 "충분히 올라온 뒤에" 드러나게 한다. 잘라낸 띠
+ * 안에 통째로 들어간 섹션은 화면에 보이는데도 opacity 0 으로 남는다 — 즉 이
+ * 값이 곧 빈 화면이 될 수 있는 최대 높이다.
+ *
+ * -30% 는 모바일(844px)에서 253px 이라 마지막 '참가 신청' 섹션(199px)이
+ * 통째로 들어갔다. 실측: y=2200 에서 199px 전부가 화면에 보이는데 기준선과
+ * 겹치는 부분이 14.8px(요소의 7.4%)뿐이라 amount 0.15 를 넘지 못해 빈 화면이
+ * 됐다. -12% 로 줄이면 같은 지점에서 겹침이 166.7px(83.8%)이 되고 띠도
+ * 101px 로 작아져 섹션이 통째로 들어갈 여지가 사실상 사라진다.
+ *
+ * amount 는 비율 대신 'some'(1px 이라도 겹치면)을 쓴다. 비율 기준은 짧은
+ * 섹션일수록 불리해서, 화면에 다 보이는 섹션이 기준을 못 넘는 위 상황을 만든다.
+ */
+const VIEW_AMOUNT = 'some' as const;
+const VIEW_MARGIN = '0px 0px -12% 0px';
 
 type RevealState = 'pending' | 'animating' | 'revealed';
 

@@ -182,7 +182,13 @@ CSS `filter: drop-shadow()`로 무비용 재현한다.
 ### 필수 대응
 
 - `prefers-reduced-motion: reduce` — 애니메이션 없이 최종 상태를 즉시 렌더한다.
-- 뷰포트 640px 이하 — 애니메이션을 생략하고 최종 상태만 보여준다.
+- 뷰포트 640px 이하 — **진입 애니메이션은 그대로 돌린다.** 유입 대다수가 모바일이라
+  진입까지 끄면 사이트의 주된 볼거리를 대다수가 못 본다. 대신 계속 도는 것만 끈다 —
+  상시 모션(부유·반짝임·호흡)과 스테이지 패럴랙스.
+  구현은 `animation-name` 을 진입 하나로 줄여 뒤쪽 값들이 잘려 나가게 하는 방식이며,
+  그래서 `animation` 선언에서 진입이 항상 첫 번째여야 한다.
+- `prefers-reduced-motion` 블록은 640px 블록보다 **뒤에** 온다. 특이도가 같아 순서로
+  승부가 갈리므로, 앞에 두면 좁은 화면에서 640px 분기가 덮어써 버린다.
 - 오브젝트 `img`에 `loading="eager"`, `decoding="async"`, `alt=""`를 설정한다.
 
 ## 대회 정보 (포스터 확정 내용)
@@ -357,8 +363,11 @@ PUBLIC_KAKAO_MAP_KEY   카카오 개발자 콘솔의 JavaScript 앱 키
 - 본문 reveal은 `#schedule`, `#venue`, `#eligibility`, `#rules`, `#prizes`, `#apply`에만
   `data-scroll-reveal`을 붙인다. Hero, stage, 제목, SectionNav, 네비게이션 필, 개별 행·지도,
   개별 로고, footer에는 붙이지 않는다.
-- reveal 상수는 데스크톱 28px, 모바일 16px, 0.64초, `[0.16, 1, 0.3, 1]`, amount 0.15,
-  margin `0px 0px -30% 0px`으로 고정한다. opacity와 완전한 `translateY()` 문자열만 애니메이션한다.
+- reveal 상수는 데스크톱 28px, 모바일 16px, 0.64초, `[0.16, 1, 0.3, 1]`, amount `'some'`,
+  margin `0px 0px -12% 0px`으로 고정한다. opacity와 완전한 `translateY()` 문자열만 애니메이션한다.
+  margin 의 크기가 곧 "화면에 보이는데 안 드러난 채로 남을 수 있는 띠" 의 높이다.
+  -30% + amount 0.15 였을 때 모바일에서 마지막 '참가 신청' 섹션이 통째로 그 띠에
+  들어가 빈 화면이 됐다. 이 두 값을 다시 키우지 않는다.
 - `prefers-reduced-motion: reduce`에서는 reveal을 초기화하지 않고 콘텐츠를 그대로 보인다.
   실행 중 reduce로 바뀌면 관측과 활성 애니메이션을 멈추고 모든 reveal 인라인 스타일을 지운다.
   초기화 또는 애니메이션 실패도 같은 fail-open 처리로 즉시 보이게 한다.
