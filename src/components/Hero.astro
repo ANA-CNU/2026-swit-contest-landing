@@ -490,9 +490,19 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
   /* ── 제목 블록 ─────────────────────────────────────── */
 
   .title-block {
-    /* stage 장식 위에서 읽히는 내용 레이어. 배경을 덧칠하지 않고 순서만 올린다. */
+    /* stage 장식 위에서 읽히는 내용 레이어. 순서만 올린다. 배경은 아래
+       ::before 의 그라디언트 페이드가 담당하며 불투명한 판을 깔지 않는다. */
     position: relative;
     z-index: 1;
+
+    /*
+     * 페이드 조정 손잡이. 이 하나만 만지면 된다.
+     *
+     * --fade-rise  제목 블록 위(스테이지 쪽)로 그라디언트가 올라가는 높이.
+     *              이 구간에서 투명 -> 흰색으로 짙어진다. 제목 블록 안쪽은
+     *              불투명한 흰색이므로 별도 값이 없다.
+     */
+    --fade-rise: clamp(80px, 12vh, 148px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -500,6 +510,53 @@ const twinkleCount = objects.filter((o) => o.twinkle).length;
     gap: clamp(0.5rem, 1.6vh, 1.25rem);
     padding: clamp(0.75rem, 2vh, 1.75rem) 1.5rem;
     min-width: 0;
+  }
+
+  /*
+   * 제목 뒤 배경.
+   *
+   * 두 구간이 한 그라디언트로 이어져 있다.
+   *   제목 블록 위 --fade-rise 구간   투명 -> 흰색
+   *   제목 블록 안쪽                  불투명한 흰색
+   *
+   * 아래쪽을 불투명하게 채우는 이유. 광선과 오브젝트가 스테이지 하단 변을
+   * 넘어 제목·본문·CTA 위를 지나갈 수 있고, 그 자리에서 gold 로고와 주황
+   * 쐐기의 휘도가 거의 같아진다(실측 1.01:1 — 글자 경계가 사라진다).
+   * 반투명하게 두면 그 대비를 되찾을 수 없다.
+   *
+   * 그래도 판이 아니라 그라디언트다. 라운드 박스도 테두리도 그림자도 없고
+   * 좌우로 화면 끝까지 가며 상단은 완전 투명에서 시작한다 — UI 카드로 보이면
+   * 실패다. 경계가 어디인지 눈에 짚이지 않는 것이 목적이다.
+   *
+   * 정지점 다섯 개로 곡선을 만든다. 선형 한 줄이면 페이드 중간부터 회백색
+   * 띠가 보인다. 앞 절반은 거의 투명하게 두고(45% 지점에서 6%) 마지막
+   * 10% 구간에서 흰색까지 올린다. 마지막 색은 요소 끝까지 유지되므로
+   * 제목 블록 전체가 흰색으로 채워진다.
+   *
+   * z-index: -1 은 .title-block 이 만든 쌓임 문맥 안에서만 뒤로 간다. 그 문맥
+   * 전체가 z-index: 1 이므로 스테이지(z-index: 0)보다는 여전히 앞이다. 즉
+   * 장식 위, 제목 글자 아래라는 정확한 한 겹에 들어간다.
+   *
+   * 애니메이션하지 않는다. 정적인 레이어이므로 prefers-reduced-motion 에서
+   * 따로 처리할 것이 없다.
+   */
+  .title-block::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: 0;
+    right: 0;
+    top: calc(-1 * var(--fade-rise));
+    bottom: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, theme(colors.paper) 0%, transparent) 0,
+      color-mix(in srgb, theme(colors.paper) 6%, transparent) calc(var(--fade-rise) * 0.45),
+      color-mix(in srgb, theme(colors.paper) 24%, transparent) calc(var(--fade-rise) * 0.72),
+      color-mix(in srgb, theme(colors.paper) 52%, transparent) calc(var(--fade-rise) * 0.9),
+      theme(colors.paper) var(--fade-rise)
+    );
   }
 
   .title {

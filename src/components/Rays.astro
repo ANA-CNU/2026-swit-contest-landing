@@ -31,26 +31,33 @@ interface Wedge {
 /**
  * 굵기를 세 급으로 뚜렷하게 갈랐다 — 두꺼운 4개, 중간 5개, 실선 같은 얇은 것 6개.
  * 전부 비슷하면 그라디언트처럼 보이므로 급끼리 인접하지 않게 섞었다.
- * 길이도 편차를 크게 뒀다. 9개는 화면 밖까지 뻗고 6개는 중간에서 끝난다.
+ *
+ * 길이는 15개 전부 1.0 이다. 부채꼴 전체가 스테이지 대각선까지 균일하게 뻗고
+ * 어느 쐐기도 중간에서 끝나지 않는다. 각도에 따라 프레임의 어느 변으로 나가는지만
+ * 달라진다 — 위쪽은 상단 변, 가운데는 우측 변, 아래쪽은 하단 변이다.
+ * 잘려 나가는 것은 의도된 동작이다(구분은 굵기와 톤이 담당한다).
  */
 const WEDGES: readonly Wedge[] = [
-  { angle: -30.0, lenD: 0.204, halfD: 0.0032, tone: 'soft', delay: 0 },
-  // 이 둘은 하단(제목 블록과 맞닿는 변)으로 빠져나가면 직선 이음선이 보인다.
-  // 하단 한계(각각 0.382 / 0.535)보다 짧게 잡아 스테이지 안에서 끝나게 했다.
-  { angle: -22.0, lenD: 0.33, halfD: 0.0167, tone: 'orange', delay: 34 },
-  { angle: -15.5, lenD: 0.46, halfD: 0.0389, tone: 'orange', delay: 12 },
-  { angle: -9.0, lenD: 0.556, halfD: 0.0026, tone: 'soft', delay: 62 },
-  { angle: -2.5, lenD: 0.963, halfD: 0.0195, tone: 'soft', delay: 22 },
-  { angle: 4.0, lenD: 1.038, halfD: 0.0361, tone: 'orange', delay: 6 },
-  { angle: 11.5, lenD: 0.611, halfD: 0.0042, tone: 'orange', delay: 74 },
-  { angle: 19.0, lenD: 0.815, halfD: 0.0148, tone: 'soft', delay: 30 },
-  { angle: 27.5, lenD: 0.574, halfD: 0.0306, tone: 'soft', delay: 18 },
-  { angle: 36.0, lenD: 0.278, halfD: 0.003, tone: 'orange', delay: 84 },
-  { angle: 44.0, lenD: 0.408, halfD: 0.0185, tone: 'orange', delay: 44 },
-  { angle: 52.5, lenD: 0.352, halfD: 0.0334, tone: 'soft', delay: 26 },
-  { angle: 61.0, lenD: 0.195, halfD: 0.0022, tone: 'orange', delay: 90 },
-  { angle: 68.0, lenD: 0.306, halfD: 0.0157, tone: 'soft', delay: 52 },
-  { angle: 74.0, lenD: 0.176, halfD: 0.0037, tone: 'orange', delay: 68 },
+  { angle: -30.0, lenD: 1.0, halfD: 0.0032, tone: 'soft', delay: 0 },
+  // 아래쪽 네 개(-30 ~ -9)는 하단 변으로 빠져나가 제목 블록 위를 지난다.
+  // 스테이지 안에서 끝나게 하려면 각각 0.382 / 0.535 이하로 잡아야 하지만,
+  // 지금은 그 대신 Hero.astro 의 .title-block::before 가 제목선부터 불투명한
+  // 흰색이어서 글자 위로 넘어온 부분을 덮는다. 그 배경을 반투명으로 되돌리면
+  // gold 로고와 주황 쐐기의 휘도가 겹쳐(실측 1.01:1) 글자 경계가 사라진다.
+  { angle: -22.0, lenD: 1.0, halfD: 0.0167, tone: 'orange', delay: 34 },
+  { angle: -15.5, lenD: 1.0, halfD: 0.0389, tone: 'orange', delay: 12 },
+  { angle: -9.0, lenD: 1.0, halfD: 0.0026, tone: 'soft', delay: 62 },
+  { angle: -2.5, lenD: 1.0, halfD: 0.0195, tone: 'soft', delay: 22 },
+  { angle: 4.0, lenD: 1.0, halfD: 0.0361, tone: 'orange', delay: 6 },
+  { angle: 11.5, lenD: 1.0, halfD: 0.0042, tone: 'orange', delay: 74 },
+  { angle: 19.0, lenD: 1.0, halfD: 0.0148, tone: 'soft', delay: 30 },
+  { angle: 27.5, lenD: 1.0, halfD: 0.0306, tone: 'soft', delay: 18 },
+  { angle: 36.0, lenD: 1.0, halfD: 0.003, tone: 'orange', delay: 84 },
+  { angle: 44.0, lenD: 1.0, halfD: 0.0185, tone: 'orange', delay: 44 },
+  { angle: 52.5, lenD: 1.0, halfD: 0.0334, tone: 'soft', delay: 26 },
+  { angle: 61.0, lenD: 1.0, halfD: 0.0022, tone: 'orange', delay: 90 },
+  { angle: 68.0, lenD: 1.0, halfD: 0.0157, tone: 'soft', delay: 52 },
+  { angle: 74.0, lenD: 1.0, halfD: 0.0037, tone: 'orange', delay: 68 },
 ];
 
 /** 쐐기 중 가장 두꺼운 것의 halfD. 호흡 주기를 굵기에 비례시키는 기준이다. */
