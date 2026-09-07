@@ -38,10 +38,13 @@ export const SECTION_ICON: Record<string, string> = {
  * 한 줄 적어 주는 게 좋다.
  */
 export const GALLERY_ALT: Record<string, string> = {
-    gallery_1: "지난 SW-IT Contest 대회장에서 참가자들이 노트북으로 문제를 푸는 모습",
-    gallery_2: "지난 SW-IT Contest 를 마치고 참가자 전원이 무대 앞에서 찍은 단체 사진",
+    gallery_1:
+        "지난 SW-IT Contest 대회장에서 참가자들이 노트북으로 문제를 푸는 모습",
+    gallery_2:
+        "지난 SW-IT Contest 를 마치고 참가자 전원이 무대 앞에서 찍은 단체 사진",
     gallery_3: "SW-IT CONTEST 현수막을 들고 무대 위에서 기념 촬영하는 운영진",
-    gallery_4: "대회 소개 화면이 걸린 강의실에서 참가자들이 노트북을 펴고 대기하는 모습",
+    gallery_4:
+        "대회 소개 화면이 걸린 강의실에서 참가자들이 노트북을 펴고 대기하는 모습",
 };
 
 export const GALLERY_ALT_FALLBACK = "지난 SW-IT Contest 현장 사진";
@@ -50,7 +53,8 @@ export const GALLERY_ALT_FALLBACK = "지난 SW-IT Contest 현장 사진";
  * 동아리 인스타그램. '더 많은 사진 보기' 링크가 여기로 간다.
  * TODO: 계정 주소가 확정되면 '#' 을 실제 주소로 교체한다.
  */
-export const INSTAGRAM_URL = "#";
+export const INSTAGRAM_URL =
+    "https://www.instagram.com/stories/highlights/17897581755296007/";
 
 /** 대회 일자. */
 export const CONTEST_DATE = "2026.10.05 (월)";
