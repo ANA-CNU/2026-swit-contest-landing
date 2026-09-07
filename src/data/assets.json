@@ -69,6 +69,32 @@
       "ratio": 0.793
     }
   ],
+  "gallery": [
+    {
+      "src": "/assets/gallery/gallery_1.webp",
+      "w": 1600,
+      "h": 1200,
+      "ratio": 1.333
+    },
+    {
+      "src": "/assets/gallery/gallery_2.webp",
+      "w": 1600,
+      "h": 1200,
+      "ratio": 1.333
+    },
+    {
+      "src": "/assets/gallery/gallery_3.webp",
+      "w": 1600,
+      "h": 1200,
+      "ratio": 1.333
+    },
+    {
+      "src": "/assets/gallery/gallery_4.webp",
+      "w": 1600,
+      "h": 1200,
+      "ratio": 1.333
+    }
+  ],
   "keycab": [
     {
       "src": "/assets/keycab/keycab_1.webp",

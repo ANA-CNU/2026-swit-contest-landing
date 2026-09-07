@@ -9,9 +9,11 @@
   4. 긴 변이 512px 을 넘으면 512px 로 축소한다. 히어로에서 그보다 크게 쓰지 않는다.
   5. src/data/assets.json 에 종류별 배열을 자연 정렬 순서로 기록한다.
 
-SOURCE_logo 만 처리 방식이 다르다 (아래 process() 참조).
-  - 알파 크롭을 하지 않는다. 로고 원본의 여백이 로고의 일부다.
-  - 긴 변이 아니라 가로 폭을 240px 로 맞춘다.
+SOURCE_logo 와 SOURCE_gallery 는 처리 방식이 다르다 (아래 process() 참조).
+  - logo   알파 크롭을 하지 않는다. 로고 원본의 여백이 로고의 일부다.
+           긴 변이 아니라 가로 폭을 640px 로 맞춘다.
+  - gallery 사진이다. 알파 크롭을 하지 않고 긴 변 1600px, 품질 82 로 줄이며
+           EXIF 를 제거한다(촬영 기기·GPS 가 남아 있을 수 있다).
 
 asset/ 은 읽기 전용이다. 이 스크립트는 asset/ 에 절대 쓰지 않는다.
 Pillow 외의 의존성은 쓰지 않는다.
@@ -24,7 +26,7 @@ import re
 import sys
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = ROOT / "asset"
@@ -32,13 +34,32 @@ OUT_DIR = ROOT / "public" / "assets"
 MANIFEST = ROOT / "src" / "data" / "assets.json"
 
 SOURCE_PREFIX = "SOURCE_"
-SKIP_KINDS = {"title"}  # SVG 원본. 크롭/변환 대상이 아니다.
+# 변환하지 않는 원본 폴더.
+#   title  SVG 원본. 크롭/변환 대상이 아니다.
+#   burst  배경 광선. 이미지 기반 광선을 도입했다가 되돌렸다. 원본은 나중을 위해
+#          남겨 뒀지만 전용 처리 분기가 없어, 빼 두지 않으면 일반 오브젝트로
+#          잘못 변환된다(알파 크롭 + 긴 변 512px). 다시 쓸 때 여기서 뺀다.
+SKIP_KINDS = {"title", "burst"}
 MAX_EDGE = 512
 WEBP_QUALITY = 88
 
 # 로고는 오브젝트와 처리 방식이 다르다. 아래 process() 의 분기를 참조한다.
 LOGO_KIND = "logo"
 LOGO_WIDTH = 640
+
+# 지난 대회 사진. 오브젝트·로고와 또 다르다.
+#   - 사진에는 투명 영역이 없으므로 알파 크롭을 하지 않는다.
+#   - 긴 변 1600px 이면 2x 디스플레이의 전체 폭 표시까지 충분하다. 그 이상은 낭비다.
+#   - 품질 82. 사진은 오브젝트(88)보다 낮아도 눈에 띄지 않는다.
+#   - EXIF 를 제거한다. 촬영 기기 정보와 GPS 좌표가 그대로 배포되면 안 된다.
+GALLERY_KIND = "gallery"
+GALLERY_MAX_EDGE = 1600
+GALLERY_QUALITY = 82
+
+
+# 받아들일 원본 확장자. 사진은 JPEG 로 들어오는 경우가 흔하다.
+DEFAULT_EXTS = {".png"}
+SOURCE_EXTS = {GALLERY_KIND: {".png", ".jpg", ".jpeg", ".webp"}}
 
 _NUM = re.compile(r"(\d+)")
 
@@ -74,12 +95,36 @@ def process(png: Path, out_path: Path, kind: str, warnings: list[str]) -> tuple[
     """PNG 하나를 가공해 WebP 로 저장하고 최종 (w, h) 를 돌려준다.
 
     오브젝트(corn/keycab/pixel/popcorn/sparkle/figure)는 알파 크롭 후 긴 변 상한을 건다.
-    로고는 그 로직을 쓰지 않는다 — 아래 로고 분기를 참조한다.
+    로고와 사진(gallery)은 그 로직을 쓰지 않는다 — 아래 각 분기를 참조한다.
     완전히 투명한 이미지는 None 을 돌려준다 (건너뜀).
     """
     with Image.open(png) as img:
         img.load()
         alpha = alpha_of(img)
+
+        if kind == GALLERY_KIND:
+            # EXIF 를 지우기 전에 방향 태그를 먼저 픽셀에 적용한다. 순서가 반대면
+            # 세로로 찍은 사진이 눕는다.
+            upright = ImageOps.exif_transpose(img)
+            canvas = upright.convert("RGB")
+
+            longest = max(canvas.size)
+            if longest > GALLERY_MAX_EDGE:
+                scale = GALLERY_MAX_EDGE / longest
+                canvas = canvas.resize(
+                    (max(1, round(canvas.width * scale)), max(1, round(canvas.height * scale))),
+                    Image.LANCZOS,
+                )
+
+            # 메타데이터를 확실히 끊는다. Image.new 로 만든 캔버스는 info 가 비어
+            # 있으므로 원본의 exif/GPS/ICC 가 따라오지 않는다. save 에 exif 를
+            # 넘기지 않는 것만으로는 info 에 남은 값이 그대로 기록될 수 있다.
+            clean = Image.new("RGB", canvas.size)
+            clean.paste(canvas)
+
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            clean.save(out_path, "WEBP", quality=GALLERY_QUALITY, method=6)
+            return clean.size
 
         if kind == LOGO_KIND:
             # 로고는 알파 크롭을 하지 않는다. 기관 로고의 여백은 디자인의 일부이고,
@@ -140,8 +185,12 @@ def main() -> int:
         if kind in SKIP_KINDS:
             continue
 
+        # 오브젝트·로고는 PNG 뿐이지만 사진은 JPEG 로 들어오는 일이 흔하다.
+        # gallery 만 확장자를 넓힌다. 넓히지 않으면 .jpg 를 넣었을 때 아무 경고
+        # 없이 무시돼 섹션이 비어 버린다.
+        exts = SOURCE_EXTS[kind] if kind in SOURCE_EXTS else DEFAULT_EXTS
         pngs = sorted(
-            (p for p in kind_dir.iterdir() if p.is_file() and p.suffix.lower() == ".png"),
+            (p for p in kind_dir.iterdir() if p.is_file() and p.suffix.lower() in exts),
             key=lambda p: natural_key(p.name),
         )
         if not pngs:

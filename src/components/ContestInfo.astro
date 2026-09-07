@@ -8,10 +8,12 @@
  *   대상   세 항목 나열
  *   규칙   허용과 금지를 나눠 배치하고 금지를 두드러지게 한다
  *   상금   금액 내림차순이 크기로 드러나는 표. 대상만 gold
+ *   지난 대회 사진. 장수에 따라 배치가 바뀐다 (PastGallery.astro)
  *
  * 배경은 전부 흰색이다. 섹션마다 배경색을 바꾸지 않는다.
  * 각 정보 섹션은 Motion JS가 한 번만 아래에서 드러내며, 기본 HTML은 항상 보인다.
  */
+import PastGallery from './PastGallery.astro';
 import VenueMap from './VenueMap.astro';
 import {
   CONTEST_DATE,
@@ -127,7 +129,12 @@ import {
     <p class="prizes__note">{PRIZE_NOTE}</p>
   </section>
 
-  {/* ── 6. 참가 신청 ───────────────────────────────── */}
+  {/* ── 6. 지난 대회 사진 ──────────────────────────────
+      정보를 다 읽고 신청 직전에 분위기를 전달하는 자리다.
+      사진이 없으면 컴포넌트가 아무것도 렌더하지 않는다. */}
+  <PastGallery />
+
+  {/* ── 7. 참가 신청 ───────────────────────────────── */}
   <section id="apply" class="section section--apply" data-scroll-reveal>
     <h2 class="heading heading--plain">참가 신청</h2>
     <a class="apply-cta" href="https://forms.gle/uPfh6FU3BDJEsYd8A">구글폼으로 신청하기</a>

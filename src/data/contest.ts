@@ -12,6 +12,7 @@ export const SECTIONS = [
     { id: "eligibility", label: "참가 대상" },
     { id: "rules", label: "대회 규칙" },
     { id: "prizes", label: "대회 상금" },
+    { id: "gallery", label: "지난 대회" },
     { id: "apply", label: "참가 신청" },
 ] as const;
 
@@ -26,7 +27,30 @@ export const SECTION_ICON: Record<string, string> = {
     eligibility: "/assets/figure/figure_4.webp",
     rules: "/assets/keycab/keycab_7.webp",
     prizes: "/assets/corn/corn_1.webp",
+    gallery: "/assets/sparkle/sparkle_13.webp",
 };
+
+/**
+ * 지난 대회 사진의 대체 텍스트.
+ *
+ * 사진은 장식이 아니라 콘텐츠다. 파일명을 키로 두고, 새 사진이 들어와도
+ * 빈 alt 로 나가지 않게 GALLERY_ALT_FALLBACK 을 쓴다. 사진을 추가하면 여기에
+ * 한 줄 적어 주는 게 좋다.
+ */
+export const GALLERY_ALT: Record<string, string> = {
+    gallery_1: "지난 SW-IT Contest 대회장에서 참가자들이 노트북으로 문제를 푸는 모습",
+    gallery_2: "지난 SW-IT Contest 를 마치고 참가자 전원이 무대 앞에서 찍은 단체 사진",
+    gallery_3: "SW-IT CONTEST 현수막을 들고 무대 위에서 기념 촬영하는 운영진",
+    gallery_4: "대회 소개 화면이 걸린 강의실에서 참가자들이 노트북을 펴고 대기하는 모습",
+};
+
+export const GALLERY_ALT_FALLBACK = "지난 SW-IT Contest 현장 사진";
+
+/**
+ * 동아리 인스타그램. '더 많은 사진 보기' 링크가 여기로 간다.
+ * TODO: 계정 주소가 확정되면 '#' 을 실제 주소로 교체한다.
+ */
+export const INSTAGRAM_URL = "#";
 
 /** 대회 일자. */
 export const CONTEST_DATE = "2026.10.05 (월)";
