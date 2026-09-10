@@ -126,7 +126,11 @@ import {
       </tbody>
     </table>
 
-    <p class="prizes__note">{PRIZE_NOTE}</p>
+    {/* 항목당 한 줄이다. 배열을 <p> 하나에 그대로 넣으면 Astro 가 구분자 없이
+        이어 붙여 네 문장이 한 줄로 흐른다. */}
+    <div class="prizes__notes">
+      {PRIZE_NOTE.map((note) => <p class="prizes__note">{note}</p>)}
+    </div>
   </section>
 
   {/* ── 6. 지난 대회 사진 ──────────────────────────────
@@ -426,12 +430,26 @@ import {
     font-size: 1.375rem;
   }
 
-  .prizes__note {
+  /* 주석 묶음. 표와의 간격은 여기서 한 번만 준다. */
+  .prizes__notes {
     margin: 1.25rem 0 0;
+  }
+
+  .prizes__note {
+    /* 줄 사이는 문장 간격보다 좁게 둔다. 네 줄이 한 묶음으로 읽혀야 한다. */
+    margin: 0.375rem 0 0;
     color: color-mix(in srgb, theme(colors.ink) 70%, transparent);
     font-size: 0.9375rem;
     line-height: 1.6;
     word-break: keep-all;
+    /* 내어쓰기. 줄이 길어 넘어갈 때 둘째 줄이 '* ' 뒤에 맞춰 들어간다.
+       좁은 화면에서 넘치는 항목이 있으므로 없으면 별표와 본문이 뒤섞인다. */
+    padding-left: 0.85em;
+    text-indent: -0.85em;
+  }
+
+  .prizes__note:first-child {
+    margin-top: 0;
   }
 
   /* ── 참가 신청 ─────────────────────────────────────── */

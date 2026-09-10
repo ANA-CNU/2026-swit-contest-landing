@@ -96,7 +96,7 @@ export const KAKAO_DIRECTIONS_URL = `https://map.kakao.com/link/to/${encodeURICo
 export const ELIGIBILITY = [
     "충남대학교 및 대전·충청 지역 소재 대학 재학생",
     "COSS 컨소시엄 소속 대학 재학생",
-    "3인으로 팀 구성",
+    "1~3인으로 팀 구성",
 ] as const;
 
 /**
@@ -139,13 +139,17 @@ export const RULES: { allowed: RuleItem[]; forbidden: string[] } = {
 /** 대회 상금. 금액 내림차순이며 대상만 최상위 강조(gold)다. */
 export const PRIZES = [
     { grade: "대상", amount: "600,000원", teams: "1팀", top: true },
-    { grade: "금상", amount: "400,000원", teams: "2팀", top: false },
-    { grade: "은상", amount: "200,000원", teams: "3팀", top: false },
-    { grade: "동상", amount: "100,000원", teams: "5팀", top: false },
+    { grade: "금상", amount: "450,000원", teams: "1팀", top: false },
+    { grade: "은상", amount: "300,000원", teams: "2팀", top: false },
+    { grade: "동상", amount: "150,000원", teams: "6팀", top: false },
 ] as const;
 
-export const PRIZE_NOTE =
-    "* 수상 팀은 '충남대학교데이터보안활용 혁신융합대학사업단장상' 을 수여";
+export const PRIZE_NOTE = [
+    "* 수상 팀은 '충남대학교데이터보안활용 혁신융합대학사업단장상' 을 수여",
+    "* 충남대학교 소속 학생: 충남대 COSS 사업단에서 시상금 지급",
+    "* COSS 컨소시엄 참여대학 소속 학생: 소속 대학 COSS 사업단에서 시상금 지급",
+    "* 기타 참가자(위 대상 외): 충남대 COSS 사업단에서 시상금에 상응하는 부상(상품)으로 대체 지급",
+] as const;
 
 /** 주최. */
 export const HOST = "충남대학교 컴퓨터인공지능학부 알고리즘 동아리 ANA";
