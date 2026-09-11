@@ -141,7 +141,7 @@ export const PRIZES = [
     { grade: "대상", amount: "600,000원", teams: "1팀", top: true },
     { grade: "금상", amount: "450,000원", teams: "1팀", top: false },
     { grade: "은상", amount: "300,000원", teams: "2팀", top: false },
-    { grade: "동상", amount: "150,000원", teams: "6팀", top: false },
+    { grade: "동상", amount: "150,000원", teams: "5팀", top: false },
 ] as const;
 
 export const PRIZE_NOTE = [
