@@ -50,11 +50,32 @@ export const GALLERY_ALT: Record<string, string> = {
 export const GALLERY_ALT_FALLBACK = "지난 SW-IT Contest 현장 사진";
 
 /**
- * 동아리 인스타그램. '더 많은 사진 보기' 링크가 여기로 간다.
- * TODO: 계정 주소가 확정되면 '#' 을 실제 주소로 교체한다.
+ * '지난 대회' 섹션 맨 아래 버튼 두 개.
+ *
+ * 한 배열에 두는 이유는 둘이 한 쌍으로 보여야 하기 때문이다. 주소가 흩어져
+ * 있으면 한쪽만 바뀌었을 때 다른 쪽과 모양이 갈리는 것을 놓친다.
+ * PastGallery 가 이 배열을 그대로 돌려 같은 스타일의 버튼을 만든다.
+ *
+ * 대회 규칙의 AOJ 링크(LINKS.aoj)와는 목적이 다르다. 저건 대회 당일 접속할
+ * 사이트 안내이고 이건 기출 문제 아카이브다. 주소가 같은 도메인이라고 해서
+ * 합치지 않는다.
  */
-export const INSTAGRAM_URL =
-    "https://www.instagram.com/stories/highlights/17897581755296007/";
+export const GALLERY_LINKS = [
+    {
+        label: "더 많은 사진 보기",
+        href: "https://www.instagram.com/stories/highlights/17897581755296007/",
+    },
+    { label: "역대 기출 문제 보기", href: "https://aoj.anacnu.kr/sources/7" },
+] as const;
+
+/**
+ * 위 버튼 아래 한 줄.
+ *
+ * 4년째 이어져 온 대회라는 신호이자, 참가를 고민하는 사람이 난이도를 가늠할
+ * 근거다. 문제 수는 적지 않는다 — 아카이브가 늘거나 정리되면 틀린 정보가 된다.
+ */
+export const GALLERY_LINKS_NOTE =
+    "2022년부터 2025년까지 네 번의 대회 문제가 AOJ에 공개되어 있습니다.";
 
 /** 대회 일자. */
 export const CONTEST_DATE = "2026.10.05 (월)";

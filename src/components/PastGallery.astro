@@ -19,7 +19,8 @@ import assets from '../data/assets.json';
 import {
   GALLERY_ALT,
   GALLERY_ALT_FALLBACK,
-  INSTAGRAM_URL,
+  GALLERY_LINKS,
+  GALLERY_LINKS_NOTE,
   SECTION_ICON,
 } from '../data/contest';
 
@@ -73,10 +74,16 @@ const FOCUS: Record<string, string> = {};
         })}
       </ul>
 
-      {/* TODO: 동아리 인스타그램 주소가 확정되면 contest.ts 의 INSTAGRAM_URL 을 교체한다. */}
-      <a class="more" href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
-        더 많은 사진 보기
-      </a>
+      {/* 사진 아카이브(인스타그램)와 기출 문제 아카이브(AOJ). 주소는 contest.ts
+          의 GALLERY_LINKS 한 곳에서 관리한다. */}
+      <div class="more-row">
+        {GALLERY_LINKS.map((link) => (
+          <a class="more" href={link.href} target="_blank" rel="noopener noreferrer">
+            {link.label}
+          </a>
+        ))}
+      </div>
+      <p class="more-note">{GALLERY_LINKS_NOTE}</p>
     </section>
   )
 }
@@ -173,13 +180,31 @@ const FOCUS: Record<string, string> = {};
     }
   }
 
+  /*
+   * 버튼 두 개를 한 행에 둔다. 간격은 행이 주고 버튼은 margin 을 갖지 않는다.
+   * align-items: flex-start 라 버튼이 행 높이로 늘어나지 않고 글자 폭만 차지한다.
+   */
+  .more-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    margin: 1rem 0 0;
+  }
+
+  /* 640px 이하는 세로로 쌓는다. 가로로 붙이면 두 버튼 글자가 줄바꿈된다. */
+  @media (max-width: 640px) {
+    .more-row {
+      flex-direction: column;
+    }
+  }
+
   /* 본문 인라인 링크(.text-link)와 다른 성격이라 버튼형으로 둔다.
      VenueMap 의 길찾기 버튼과 같은 형태다. */
   .more {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    margin: 1rem 0 0;
+    margin: 0;
     padding: 0.5rem 1rem;
     border: 1px solid theme(colors.orange);
     border-radius: 9999px;
@@ -206,5 +231,15 @@ const FOCUS: Record<string, string> = {};
   .more:focus-visible {
     outline: 2px solid theme(colors.orange);
     outline-offset: 3px;
+  }
+
+  /* 기출 문제 링크를 받쳐 주는 한 줄. 버튼보다 작고 옅게 둬서 버튼과 경쟁하지
+     않게 한다. 대회 상금의 각주(.prizes__note)와 같은 성격이다. */
+  .more-note {
+    margin: 0.625rem 0 0;
+    color: color-mix(in srgb, theme(colors.ink) 65%, transparent);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    word-break: keep-all;
   }
 </style>
