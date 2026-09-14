@@ -1,0 +1,89 @@
+---
+/**
+ * 본문 흐름에서 한 단계 올려 읽히게 하는 주황 박스.
+ *
+ * '대회 규칙' 의 금지 항목과 '참가 대상' 의 참가 제한 안내가 이 컴포넌트를 쓴다.
+ * 원래 금지 박스 하나뿐이라 ContestInfo 안에 인라인으로 있었는데, 같은 처리가
+ * 둘이 되는 순간 테두리 굵기·배경 농도·배지 크기가 갈릴 여지가 생긴다.
+ * 앞으로 이런 안내가 더 생겨도 여기만 고치면 된다.
+ *
+ * 색은 두 용도 모두 orange 다. 성격(금지 / 안내)은 배지의 라벨 글자가 구분하고
+ * 색으로는 나누지 않는다. 팔레트에 쓸 수 있는 강조색이 orange 계열뿐이고
+ * (gold 는 제목 전용, orange-soft 는 광선 보조), 흰 글자 배지에 gold 를 쓰면
+ * 대비가 1.87:1 로 읽히지 않는다. 두 박스는 다른 섹션에 있어 한 화면에 나란히
+ * 놓이지도 않는다.
+ *
+ * 강조는 데이터가 정한다. 슬롯으로 마크업을 받지 않는 이유는 Astro 의 스코프
+ * 스타일이 슬롯 내용에 닿지 않아서다 — 강조 스타일이 이 파일 밖으로 새면
+ * 두 박스의 강조가 갈린다.
+ */
+export type NoticeSegment = { text: string; em?: boolean };
+
+interface Props {
+    /** 배지 글자. 박스의 성격을 한 단어로 말한다 ('금지', '참가 제한'). */
+    label: string;
+    /** 문자열이면 강조 없이 통째로, 배열이면 em: true 인 조각만 강조한다. */
+    text: string | readonly NoticeSegment[];
+}
+
+const { label, text } = Astro.props;
+const segments: readonly NoticeSegment[] =
+    typeof text === 'string' ? [{ text }] : text;
+---
+
+<p class="notice">
+  <span class="notice__label">{label}</span>
+  <span class="notice__text"
+    >{
+      segments.map((seg) =>
+        seg.em ? <strong class="notice__em">{seg.text}</strong> : seg.text,
+      )
+    }</span
+  >
+</p>
+
+<style>
+  /* 컴포넌트 스코프 스타일은 별도 CSS 엔트리다. theme() 을 쓰려면 설정을 들고
+     있는 global.css 를 참조로 걸어야 한다. */
+  @reference '../styles/global.css';
+
+  /* 테두리와 라벨로 본문보다 한 단계 위에 놓는다. */
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin: 1.5rem 0 0;
+    padding: 1rem 1.125rem;
+    border: 2px solid theme(colors.orange);
+    border-radius: 0.625rem;
+    background-color: color-mix(in srgb, theme(colors.orange) 6%, transparent);
+  }
+
+  .notice__label {
+    flex: none;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    background-color: theme(colors.orange);
+    color: theme(colors.paper);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .notice__text {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.55;
+    word-break: keep-all;
+  }
+
+  /*
+   * 본문이 이미 600 이라 굵기만으로는 강조가 서지 않는다. 색을 함께 바꾼다.
+   * 히어로 소개 문장의 <strong> 과 같은 어휘다(orange + nowrap).
+   */
+  .notice__em {
+    color: theme(colors.orange);
+    font-weight: 700;
+    /* 강조 구간이 줄 사이로 쪼개지지 않게 한다. */
+    white-space: nowrap;
+  }
+</style>

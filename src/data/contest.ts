@@ -113,12 +113,31 @@ export const KAKAO_DIRECTIONS_URL = `https://map.kakao.com/link/to/${encodeURICo
     VENUE_COORD.label,
 )},${VENUE_COORD.lat},${VENUE_COORD.lng}`;
 
-/** 참가 대상. */
+/**
+ * 참가 대상. 전부 명사형으로 끝난다.
+ *
+ * 타 대학 인원 제한은 여기 넣지 않는다. 존댓말 한 문장이라 어투가 섞이고,
+ * 자격 조건이 아니라 신청을 서두르라는 안내라 성격도 다르다.
+ * ELIGIBILITY_NOTICE 로 분리해 목록 아래 박스로 띄운다.
+ */
 export const ELIGIBILITY = [
     "충남대학교 및 대전·충청 지역 소재 대학 재학생",
     "COSS 컨소시엄 소속 대학 재학생",
     "1~3인으로 팀 구성",
-    "타 대학 재학생은 선착순 6명까지 참가 가능하며, 이후 신청은 반려될 수 있음",
+] as const;
+
+/**
+ * 참가 대상 목록 아래 안내 박스.
+ *
+ * em: true 인 조각만 강조된다 (NoticeBox). 인원 상한과 반려 가능성 두 곳이며,
+ * 이 둘이 '빨리 신청해야 하는 이유' 의 전부다.
+ */
+export const ELIGIBILITY_NOTICE = [
+    { text: "타 대학 재학생은 " },
+    { text: "대학별 선착순 6명", em: true },
+    { text: "까지 참가할 수 있으며, 수용 인원에 따라 신청이 " },
+    { text: "반려될 수 있으니", em: true },
+    { text: " 빠른 신청 바랍니다." },
 ] as const;
 
 /**

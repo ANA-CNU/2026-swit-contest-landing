@@ -13,11 +13,13 @@
  * 배경은 전부 흰색이다. 섹션마다 배경색을 바꾸지 않는다.
  * 각 정보 섹션은 Motion JS가 한 번만 아래에서 드러내며, 기본 HTML은 항상 보인다.
  */
+import NoticeBox from './NoticeBox.astro';
 import PastGallery from './PastGallery.astro';
 import VenueMap from './VenueMap.astro';
 import {
   CONTEST_DATE,
   ELIGIBILITY,
+  ELIGIBILITY_NOTICE,
   PRIZES,
   PRIZE_NOTE,
   RULES,
@@ -69,6 +71,10 @@ import {
     <ul class="targets">
       {ELIGIBILITY.map((item) => <li class="targets__item">{item}</li>)}
     </ul>
+
+    {/* 자격 조건이 아니라 신청을 서두르라는 안내다. 목록 항목으로 넣으면
+        명사형 세 줄 사이에 존댓말 한 줄이 섞인다. */}
+    <NoticeBox label="참가 제한" text={ELIGIBILITY_NOTICE} />
   </section>
 
   {/* ── 4. 대회 규칙 — 허용 / 금지 구분 ─────────────── */}
@@ -98,10 +104,7 @@ import {
       }
     </ul>
 
-    <p class="ban">
-      <span class="ban__label">금지</span>
-      <span class="ban__text">{RULES.forbidden[0]}</span>
-    </p>
+    <NoticeBox label="금지" text={RULES.forbidden[0]} />
   </section>
 
   {/* ── 5. 대회 상금 ───────────────────────────────── */}
@@ -333,35 +336,6 @@ import {
     border-left: 2px solid theme(colors.orange);
     border-bottom: 2px solid theme(colors.orange);
     transform: rotate(-45deg);
-  }
-
-  /* 금지 항목은 테두리와 라벨로 눈에 띄게 한다. */
-  .ban {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin: 1.5rem 0 0;
-    padding: 1rem 1.125rem;
-    border: 2px solid theme(colors.orange);
-    border-radius: 0.625rem;
-    background-color: color-mix(in srgb, theme(colors.orange) 6%, transparent);
-  }
-
-  .ban__label {
-    flex: none;
-    padding: 0.125rem 0.5rem;
-    border-radius: 0.25rem;
-    background-color: theme(colors.orange);
-    color: theme(colors.paper);
-    font-size: 0.8125rem;
-    font-weight: 700;
-  }
-
-  .ban__text {
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.55;
-    word-break: keep-all;
   }
 
   /* ── 상금: 금액 순서가 크기로 드러나는 표 ────────────── */
