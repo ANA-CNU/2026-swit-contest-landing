@@ -85,11 +85,17 @@
     {
       "src": "/assets/gallery/gallery_3.webp",
       "w": 1600,
+      "h": 900,
+      "ratio": 1.778
+    },
+    {
+      "src": "/assets/gallery/gallery_4.webp",
+      "w": 1600,
       "h": 1200,
       "ratio": 1.333
     },
     {
-      "src": "/assets/gallery/gallery_4.webp",
+      "src": "/assets/gallery/gallery_5.webp",
       "w": 1600,
       "h": 1200,
       "ratio": 1.333

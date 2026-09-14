@@ -41,10 +41,12 @@ export const GALLERY_ALT: Record<string, string> = {
     gallery_1:
         "지난 SW-IT Contest 대회장에서 참가자들이 노트북으로 문제를 푸는 모습",
     gallery_2:
-        "지난 SW-IT Contest 를 마치고 참가자 전원이 무대 앞에서 찍은 단체 사진",
-    gallery_3: "SW-IT CONTEST 현수막을 들고 무대 위에서 기념 촬영하는 운영진",
+        "지난 SW-IT Contest 를 마치고 참가자 전원이 상금 팻말을 들고 찍은 단체 사진",
+    gallery_3:
+        "대회장 한편에 차려진 다과 테이블에 빵과 디저트가 길게 놓여 있는 모습",
     gallery_4:
         "대회 소개 화면이 걸린 강의실에서 참가자들이 노트북을 펴고 대기하는 모습",
+    gallery_5: "SW-IT CONTEST 현수막을 들고 무대 위에서 기념 촬영하는 운영진",
 };
 
 export const GALLERY_ALT_FALLBACK = "지난 SW-IT Contest 현장 사진";
