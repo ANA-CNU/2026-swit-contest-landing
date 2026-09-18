@@ -21,6 +21,9 @@ import {
   ELIGIBILITY,
   ELIGIBILITY_NOTICE,
   PRIZES,
+  PRIZE_GOODS_NOTE_INDEX,
+  PRIZE_GOODS_RULES,
+  PRIZE_GOODS_TITLE,
   PRIZE_NOTE,
   RULES,
   SCHEDULE,
@@ -132,7 +135,32 @@ import {
     {/* 항목당 한 줄이다. 배열을 <p> 하나에 그대로 넣으면 Astro 가 구분자 없이
         이어 붙여 네 문장이 한 줄로 흐른다. */}
     <div class="prizes__notes">
-      {PRIZE_NOTE.map((note) => <p class="prizes__note">{note}</p>)}
+      {
+        PRIZE_NOTE.map((note, i) => (
+          <>
+            <p class="prizes__note">{note}</p>
+            {/* 부상 대체 지급 주석에만 붙는다. 현금 수상자에게는 해당하지 않는
+                규정이라 표 아래 독립 항목으로 두면 전원에게 적용되는 것으로 읽힌다. */}
+            {i === PRIZE_GOODS_NOTE_INDEX && (
+              <details class="goods">
+                <summary class="goods__summary">{PRIZE_GOODS_TITLE}</summary>
+                <ul class="goods__list">
+                  {PRIZE_GOODS_RULES.map((rule) => (
+                    <li class="goods__item">
+                      {rule.text}
+                      {rule.sub && (
+                        <ul class="goods__sublist">
+                          {rule.sub.map((line) => <li class="goods__subitem">{line}</li>)}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </>
+        ))
+      }
     </div>
   </section>
 
@@ -424,6 +452,103 @@ import {
 
   .prizes__note:first-child {
     margin-top: 0;
+  }
+
+  /*
+   * 부상 지급 세부 규정 — 네 번째 주석의 하위 항목.
+   *
+   * 주석보다 튀지 않아야 한다. 그래서 색은 주석(ink 70%)보다 더 옅게,
+   * 글자는 더 작게 두고, 들여쓰기로 종속 관계를 드러낸다. 테두리나 배경을
+   * 주지 않는다 — 상자를 만들면 주석과 같은 층위로 올라간다.
+   *
+   * <details> 는 네이티브라 JS 가 필요 없다.
+   */
+  .goods {
+    /* 주석의 '* ' 뒤 글자가 시작하는 지점보다 한 단계 더 들여쓴다. */
+    margin: 0.25rem 0 0 1.35em;
+  }
+
+  .goods__summary {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    width: fit-content;
+    color: color-mix(in srgb, theme(colors.ink) 55%, transparent);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    cursor: pointer;
+    /* 기본 삼각형을 지우고 아래 ::before 로 직접 그린다. 기본 마커는 브라우저마다
+       크기와 여백이 달라 주석과의 정렬이 맞지 않는다. */
+    list-style: none;
+    transition: color 150ms ease;
+  }
+
+  .goods__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .goods__summary::before {
+    content: '';
+    flex: none;
+    width: 0;
+    height: 0;
+    /* 오른쪽을 향한 작은 삼각형. 펼치면 아래를 향한다. */
+    border-top: 0.26em solid transparent;
+    border-bottom: 0.26em solid transparent;
+    border-left: 0.42em solid color-mix(in srgb, theme(colors.orange) 70%, transparent);
+    transform: translateY(0.08em);
+    transition: rotate 150ms ease;
+  }
+
+  .goods[open] > .goods__summary::before {
+    rotate: 90deg;
+  }
+
+  .goods__summary:hover {
+    color: color-mix(in srgb, theme(colors.ink) 75%, transparent);
+  }
+
+  .goods__summary:focus-visible {
+    outline: 2px solid theme(colors.orange);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .goods__list {
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .goods__item {
+    position: relative;
+    margin: 0.3125rem 0 0;
+    padding-left: 0.75em;
+    color: color-mix(in srgb, theme(colors.ink) 60%, transparent);
+    font-size: 0.8125rem;
+    line-height: 1.65;
+    word-break: keep-all;
+  }
+
+  .goods__item::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    color: color-mix(in srgb, theme(colors.ink) 40%, transparent);
+  }
+
+  /* 예시·단서 줄. 한 단계 더 들여쓰고 마커를 주지 않는다. */
+  .goods__sublist {
+    margin: 0.125rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .goods__subitem {
+    color: color-mix(in srgb, theme(colors.ink) 48%, transparent);
+    font-size: 0.8125rem;
+    line-height: 1.65;
+    word-break: keep-all;
   }
 
   /* ── 참가 신청 ─────────────────────────────────────── */
