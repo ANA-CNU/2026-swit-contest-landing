@@ -204,7 +204,8 @@ export const PRIZE_NOTE = [
  * 공식 안내문이므로 문구를 바꾸거나 요약하지 않는다.
  * sub 는 본문에 딸린 예시·단서 줄이며 한 단계 더 들여쓴다.
  */
-export const PRIZE_GOODS_TITLE = "부상(상품) 지급 세부 규정";
+export const PRIZE_GOODS_TITLE =
+    "부상(상품) 지급 세부 규정 - 기타 참가자 필독";
 
 export const PRIZE_GOODS_RULES: readonly {
     text: string;
