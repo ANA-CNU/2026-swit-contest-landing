@@ -124,7 +124,7 @@ export const KAKAO_DIRECTIONS_URL = `https://map.kakao.com/link/to/${encodeURICo
  */
 export const ELIGIBILITY = [
     "충남대학교 및 대전·충청 지역 소재 대학 재학생",
-    "COSS 컨소시엄 소속 대학 재학생",
+    "데이터보안·활용 융합 COSS 컨소시엄 소속 5개 대학 재학생",
     "1~3인으로 팀 구성",
 ] as const;
 
@@ -190,7 +190,7 @@ export const PRIZES = [
 export const PRIZE_NOTE = [
     "* 수상 팀은 '충남대학교데이터보안활용 혁신융합대학사업단장상' 을 수여",
     "* 충남대학교 소속 학생: 충남대 COSS 사업단에서 시상금 지급",
-    "* COSS 컨소시엄 참여대학 소속 학생: 소속 대학 COSS 사업단에서 시상금 지급",
+    "* 데이터보안·활용 융합 COSS 컨소시엄 소속 5개 대학 학생: 소속 대학 COSS 사업단에서 시상금 지급",
     "* 기타 참가자(위 대상 외): 충남대 COSS 사업단에서 시상금에 상응하는 부상(상품)으로 대체 지급",
 ] as const;
 

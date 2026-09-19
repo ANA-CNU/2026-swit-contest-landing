@@ -1,6 +1,6 @@
 ---
 /**
- * 푸터. 주최 표기와 로고 넷을 배치한다 — ANA, 충남대학교,
+ * 푸터. 주최 표기, 로고 넷, 문의 연락처를 배치한다 — ANA, 충남대학교,
  * 소프트웨어중심대학사업단, COSS (CLAUDE.md "로고" 절).
  *
  * 로고는 장식이 아니라 정보이므로 alt 에 기관명을 넣는다. 각 로고는 기관
@@ -14,10 +14,18 @@ import { HOST, LOGOS } from '../data/contest';
 
 <footer class="footer">
   <div class="footer__inner">
-    <p class="footer__host">
-      <span class="footer__host-label">주최</span>
-      {HOST}
-    </p>
+    <div class="footer__details">
+      <p class="footer__host">
+        <span class="footer__host-label">주최</span>
+        {HOST}
+      </p>
+
+      <p class="footer__contact">
+        <span class="footer__host-label">문의</span>
+        ANA 회장 황현석 <a href="tel:01031540982">010-3154-0982</a> /
+        <a href="mailto:hhs2003@o.cnu.ac.kr">hhs2003@o.cnu.ac.kr</a>
+      </p>
+    </div>
 
     <ul class="logos" aria-label="주최 및 후원 기관">
       {
@@ -39,8 +47,6 @@ import { HOST, LOGOS } from '../data/contest';
         ))
       }
     </ul>
-
-    <p class="footer__copy">SW-IT Contest 2026</p>
   </div>
 </footer>
 
@@ -64,8 +70,15 @@ import { HOST, LOGOS } from '../data/contest';
     text-align: center;
   }
 
-  .footer__host {
+  .footer__details {
+    display: grid;
+    gap: 0.375rem;
+  }
+
+  .footer__host,
+  .footer__contact {
     margin: 0;
+    color: theme(colors.ink);
     font-size: 0.9375rem;
     line-height: 1.6;
     word-break: keep-all;
@@ -75,7 +88,7 @@ import { HOST, LOGOS } from '../data/contest';
     margin-right: 0.5rem;
     color: theme(colors.orange);
     font-size: 0.8125rem;
-    font-weight: 600;
+    font-weight: 700;
   }
 
   .logos {
@@ -148,10 +161,16 @@ import { HOST, LOGOS } from '../data/contest';
     }
   }
 
-  .footer__copy {
-    margin: 0;
-    color: color-mix(in srgb, theme(colors.ink) 45%, transparent);
-    font-size: 0.8125rem;
+  .footer__contact a {
+    color: theme(colors.ink);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, theme(colors.orange) 65%, transparent);
+    text-underline-offset: 0.16em;
+  }
+
+  .footer__contact a:focus-visible {
+    outline: 2px solid theme(colors.orange);
+    outline-offset: 3px;
   }
 
   /* 640px 이하 — 2열로 접는다. 폭도 함께 줄여 두 열이 화면에 들어오게 한다. */
