@@ -1,0 +1,176 @@
+---
+import { REGISTRATION_NOTICE } from '../data/registration-notice';
+
+const notice = REGISTRATION_NOTICE;
+---
+
+{
+  notice.enabled && (
+    <dialog
+      class="registration-notice"
+      aria-labelledby="registration-notice-title"
+      aria-describedby="registration-notice-description"
+    >
+      <div class="registration-notice__panel">
+        <form method="dialog" class="registration-notice__dismiss">
+          <button type="submit" aria-label="안내 닫기" class="registration-notice__close">
+            <span aria-hidden="true">×</span>
+          </button>
+        </form>
+
+        <p class="registration-notice__badge">참가 안내</p>
+        <h2 id="registration-notice-title" class="registration-notice__title">{notice.title}</h2>
+        <div id="registration-notice-description" class="registration-notice__description">
+          {notice.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+        </div>
+
+        <form method="dialog" class="registration-notice__action">
+          <button type="submit">확인</button>
+        </form>
+      </div>
+    </dialog>
+  )
+}
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>('.registration-notice');
+
+  if (dialog) {
+    const body = document.body;
+    const previousOverflow = body.style.getPropertyValue('overflow');
+    const previousOverflowPriority = body.style.getPropertyPriority('overflow');
+
+    dialog.addEventListener('close', () => {
+      body.style.setProperty('overflow', previousOverflow, previousOverflowPriority);
+    });
+
+    dialog.showModal();
+    body.style.setProperty('overflow', 'hidden');
+  }
+</script>
+
+<style>
+  @reference '../styles/global.css';
+
+  .registration-notice {
+    width: min(calc(100vw - 2.5rem), 30rem);
+    max-height: calc(100dvh - 2.5rem);
+    margin: auto;
+    padding: 0;
+    overflow: auto;
+    border: 1px solid color-mix(in srgb, theme(colors.orange) 35%, theme(colors.ink));
+    border-radius: 1.25rem;
+    background: theme(colors.paper);
+    color: theme(colors.ink);
+    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 22%);
+  }
+
+  .registration-notice::backdrop {
+    background: rgb(0 0 0 / 58%);
+  }
+
+  .registration-notice[open] {
+    animation: notice-enter 180ms ease-out both;
+  }
+
+  .registration-notice__panel {
+    position: relative;
+    padding: clamp(1.5rem, 5vw, 2.25rem);
+  }
+
+  .registration-notice__dismiss {
+    position: absolute;
+    top: 0.875rem;
+    right: 0.875rem;
+  }
+
+  .registration-notice__close {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: theme(colors.ink);
+    cursor: pointer;
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+
+  .registration-notice__badge {
+    width: fit-content;
+    margin: 0 0 1rem;
+    padding: 0.3rem 0.625rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, theme(colors.orange) 45%, theme(colors.paper));
+    background: color-mix(in srgb, theme(colors.orange) 18%, theme(colors.paper));
+    color: theme(colors.ink);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .registration-notice__title {
+    margin: 0;
+    padding-right: 2rem;
+    font-size: clamp(1.4rem, 5vw, 1.8rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.3;
+    word-break: keep-all;
+  }
+
+  .registration-notice__description {
+    margin-top: 1.25rem;
+    font-size: 1rem;
+    line-height: 1.7;
+    word-break: keep-all;
+  }
+
+  .registration-notice__description p {
+    margin: 0;
+  }
+
+  .registration-notice__description p + p {
+    margin-top: 0.875rem;
+  }
+
+  .registration-notice__action {
+    margin-top: 1.75rem;
+  }
+
+  .registration-notice__action button {
+    width: 100%;
+    min-height: 3rem;
+    border: 0;
+    border-radius: 0.625rem;
+    background: theme(colors.ink);
+    color: theme(colors.paper);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .registration-notice__close:hover,
+  .registration-notice__close:focus-visible {
+    background: color-mix(in srgb, theme(colors.orange) 14%, transparent);
+  }
+
+  .registration-notice button:focus-visible {
+    outline: 3px solid theme(colors.orange);
+    outline-offset: 3px;
+  }
+
+  @keyframes notice-enter {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .registration-notice[open] {
+      animation: none;
+    }
+  }
+</style>

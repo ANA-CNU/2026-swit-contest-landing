@@ -398,8 +398,12 @@ PUBLIC_KAKAO_MAP_KEY   카카오 개발자 콘솔의 JavaScript 앱 키
 - 애니메이션에 난수를 쓰지 않는다.
 - 다크 테마와 백엔드를 추가하지 않는다.
 - 외부 API 는 카카오맵 하나만 쓴다. 그 밖의 연동을 추가하지 않는다.
-- JS 는 네 곳에만 쓴다 — 히어로 애니메이션, 섹션 네비게이션의 스크롤 위치 표시,
-  카카오맵 로딩, `src/scripts/scroll-reveal.ts`의 본문 reveal. 그 밖의 동작을 JS 로 붙이지 않는다.
+- JS 는 다섯 곳에만 쓴다 — 히어로 애니메이션, 섹션 네비게이션의 스크롤 위치 표시,
+  카카오맵 로딩, `src/scripts/scroll-reveal.ts`의 본문 reveal, `RegistrationNotice`의 native
+  dialog 표시·닫힘 중 스크롤 잠금. 그 밖의 동작을 JS 로 붙이지 않는다.
+- 참가 접수 상태 팝업은 `src/data/registration-notice.ts`의 `REGISTRATION_NOTICE`가 단일
+  제어점이다. `enabled: false`로 바꾸고 재빌드하면 dialog 마크업은 빠지고, Astro가 항상
+  출력하는 초기화 스크립트는 대상 노드가 없을 때 안전하게 아무 동작도 하지 않는다.
 - 본문 reveal은 `#schedule`, `#venue`, `#eligibility`, `#rules`, `#prizes`, `#apply`에만
   `data-scroll-reveal`을 붙인다. Hero, stage, 제목, SectionNav, 네비게이션 필, 개별 행·지도,
   개별 로고, footer에는 붙이지 않는다.
