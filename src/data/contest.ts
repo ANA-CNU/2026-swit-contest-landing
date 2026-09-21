@@ -124,7 +124,7 @@ export const KAKAO_DIRECTIONS_URL = `https://map.kakao.com/link/to/${encodeURICo
  */
 export const ELIGIBILITY = [
     "충남대학교 및 대전·충청 지역 소재 대학 재학생",
-    "데이터보안·활용 융합 COSS 컨소시엄 소속 5개 대학 재학생",
+    "전체 COSS 컨소시엄 소속 대학 재학생",
     "1~3인으로 팀 구성",
 ] as const;
 
@@ -190,12 +190,11 @@ export const PRIZES = [
 export const PRIZE_NOTE = [
     "* 수상 팀은 '충남대학교데이터보안활용 혁신융합대학사업단장상' 을 수여",
     "* 충남대학교 소속 학생: 충남대 COSS 사업단에서 시상금 지급",
-    "* 데이터보안·활용 융합 COSS 컨소시엄 소속 5개 대학 학생: 소속 대학 COSS 사업단에서 시상금 지급",
-    "* 기타 참가자(위 대상 외): 충남대 COSS 사업단에서 시상금에 상응하는 부상(상품)으로 대체 지급",
+    "* 충남대학교 외 대학 소속 학생: 시상금에 상응하는 부상(상품)으로 대체 지급 예정",
 ] as const;
 
 /**
- * 네 번째 주석(부상 대체 지급)에만 딸린 세부 규정.
+ * 세 번째 주석(부상 대체 지급)에만 딸린 세부 규정.
  *
  * 상금을 현금으로 받는 수상자에게는 적용되지 않는다. 그래서 표 아래 독립
  * 항목으로 두지 않고 그 주석 안에 접이식으로 넣는다 — 독립 항목이면 모든
@@ -205,7 +204,7 @@ export const PRIZE_NOTE = [
  * sub 는 본문에 딸린 예시·단서 줄이며 한 단계 더 들여쓴다.
  */
 export const PRIZE_GOODS_TITLE =
-    "부상(상품) 지급 세부 규정 - 기타 참가자 필독";
+    "부상(상품) 지급 세부 규정 - 타 대학 참가자 필독";
 
 export const PRIZE_GOODS_RULES: readonly {
     text: string;
@@ -243,7 +242,7 @@ export const PRIZE_GOODS_RULES: readonly {
  * 주석 아래" 여야 하기 때문이다. 주석을 추가하거나 순서를 바꾸면 이 값도 함께
  * 고쳐야 한다.
  */
-export const PRIZE_GOODS_NOTE_INDEX = 3;
+export const PRIZE_GOODS_NOTE_INDEX = 2;
 
 /** 주최. */
 export const HOST = "충남대학교 컴퓨터인공지능학부 알고리즘 동아리 ANA";

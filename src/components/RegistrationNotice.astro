@@ -2,6 +2,7 @@
 import { REGISTRATION_NOTICE } from '../data/registration-notice';
 
 const notice = REGISTRATION_NOTICE;
+const highlightedPhrase = '충남대학교 학생';
 ---
 
 {
@@ -21,7 +22,16 @@ const notice = REGISTRATION_NOTICE;
         <p class="registration-notice__badge">참가 안내</p>
         <h2 id="registration-notice-title" class="registration-notice__title">{notice.title}</h2>
         <div id="registration-notice-description" class="registration-notice__description">
-          {notice.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+          {notice.paragraphs.map((paragraph) => (
+            <p>
+              {paragraph.split(highlightedPhrase).map((segment, index, segments) => (
+                <>
+                  {segment}
+                  {index < segments.length - 1 && <strong>{highlightedPhrase}</strong>}
+                </>
+              ))}
+            </p>
+          ))}
         </div>
 
         <form method="dialog" class="registration-notice__action">
@@ -134,6 +144,10 @@ const notice = REGISTRATION_NOTICE;
 
   .registration-notice__description p + p {
     margin-top: 0.875rem;
+  }
+
+  .registration-notice__description strong {
+    font-weight: 700;
   }
 
   .registration-notice__action {
